@@ -24,6 +24,8 @@
   "devDependencies": {
     "@jest/globals": "^29",
     "@tailwindcss/postcss": "^4",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
@@ -32,6 +34,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.2.6",
     "jest": "^29",
+    "jest-environment-jsdom": "^30.4.1",
     "prettier": "^3",
     "tailwindcss": "^4",
     "ts-jest": "^29",

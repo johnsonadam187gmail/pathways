@@ -11,10 +11,12 @@ const config = {
       "ts-jest",
       {
         tsconfig: "tsconfig.json",
+        jsx: "react-jsx",
       },
     ],
   },
   setupFiles: ["<rootDir>/jest.setup.js"],
+  setupFilesAfterEnv: ["<rootDir>/jest.dom.setup.js"],
   testMatch: ["**/*.test.ts", "**/*.test.tsx"],
   verbose: true,
 };
