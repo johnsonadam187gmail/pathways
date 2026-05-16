@@ -1,23 +1,14 @@
 // API Route Utilities
 import { NextResponse } from "next/server";
 import { getDriver } from "./neo4j/driver";
+import { GameContextRepository } from "./neo4j/repositories/game-context.repository";
+import { TechniqueActionRepository } from "./neo4j/repositories/technique-action.repository";
+import { TacticalPathwayRepository } from "./neo4j/repositories/tactical-pathway.repository";
+import { TerminalSinkRepository } from "./neo4j/repositories/terminal-sink.repository";
 import { AppError } from "./utils/errors";
 
 export function getRepositories() {
   const driver = getDriver();
-  const {
-    GameContextRepository,
-  } = require("./neo4j/repositories/game-context.repository");
-  const {
-    TechniqueActionRepository,
-  } = require("./neo4j/repositories/technique-action.repository");
-  const {
-    TacticalPathwayRepository,
-  } = require("./neo4j/repositories/tactical-pathway.repository");
-  const {
-    TerminalSinkRepository,
-  } = require("./neo4j/repositories/terminal-sink.repository");
-
   return {
     gameContext: new GameContextRepository(driver),
     techniqueAction: new TechniqueActionRepository(driver),

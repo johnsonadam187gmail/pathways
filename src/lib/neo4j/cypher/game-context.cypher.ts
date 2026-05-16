@@ -34,4 +34,16 @@ export const GAME_CONTEXT = {
     DETACH DELETE gc
     RETURN count(*) AS deleted
   `,
+
+  // Link a TechniqueAction to this GameContext via RESULTS_IN edge.
+  // This represents a technique resulting in a new positional state.
+  // Returns the edge, target GameContext, and all source GameContext roles for validation.
+  LINK_FROM_TECHNIQUE: `
+    MATCH (ta:TechniqueAction {id: $technique_id})
+    MATCH (gc:GameContext {id: $game_context_id})
+    MATCH (source:GameContext)-[:TACTICAL_PATHWAY]->(ta)
+    WITH ta, gc, collect(DISTINCT source.relative_role) AS source_roles
+    CREATE (ta)-[r:RESULTS_IN {id: $id}]->(gc)
+    RETURN r, gc, source_roles
+  `,
 } as const;

@@ -8,7 +8,6 @@ import ReactFlow, {
   MiniMap,
   type Node,
   type Edge,
-  type Connection,
   type NodeChange,
   type EdgeChange,
   applyNodeChanges,

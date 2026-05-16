@@ -8,18 +8,15 @@ Martial Arts Modelling Language (MAML) — Graph-native tactical analysis applic
 # Install dependencies
 npm install
 
-# Start local Neo4j (Docker required)
-docker compose up -d
+# Neo4j Desktop (required — install from https://neo4j.com/download/)
+# 1. Open Neo4j Desktop, create a DBMS with version 5.x
+# 2. Set password to match .env.local (default: password)
+# 3. Start the database
+# 4. Verify connection at http://localhost:7474 (browser)
 
-# Stop Neo4j
-docker compose down
-
-# View Neo4j logs
-docker compose logs -f
-
-# Neo4j Browser (open in browser): http://localhost:7474
+# Neo4j Browser: http://localhost:7474
 # Neo4j Bolt: bolt://localhost:7687
-# Default creds: neo4j / password (set in docker-compose.yml)
+# Default creds: neo4j / password (set in .env.local)
 
 # Run all tests
 npm test
@@ -90,6 +87,7 @@ src/
 ## MAML Data Schema
 
 ### Node: GameContext (The Combat State)
+
 - `id: UUID` — Primary key
 - `position_name: string` — e.g. "Closed Guard Bottom"
 - `relative_role: RelativeRole` — `OFFENSIVE | DEFENSIVE | NEUTRAL | SYMMETRICAL_DANGER`
@@ -98,12 +96,14 @@ src/
 - `points_value: number` — 0, 2, 3, 4
 
 ### Node: TechniqueAction (The Mechanical Operator)
+
 - `id: UUID`
 - `action_name: string` — e.g. "Scissor Sweep"
 - `action_type: ActionType` — `SWEEP | SUBMISSION | ESCAPE | GUARD_PASS | POSTURE_ADJUST`
 - `mechanical_preconditions: string[]` — Required grips/controls
 
 ### Edge: TacticalPathway (The Conditional Gateway)
+
 - `id: UUID`
 - `gateway_type: GatewayType` — `INTENT_DRIVEN | STIMULUS_DRIVEN`
 - `trigger_condition: string` — Prerequisite stimulus description
@@ -111,6 +111,7 @@ src/
 - `execution_counter: number` — Integer (future analytics, default 0)
 
 ### Node: TerminalSink (The End State)
+
 - `id: UUID`
 - `sink_type: SinkType` — `SUBMISSION_SUCCESS | SUBMISSION_CONCEDED`
 
@@ -118,17 +119,17 @@ src/
 
 The system **must reject** any graph mutation violating the Universal Transitional Matrix:
 
-| # | Transition | Description |
-|---|-----------|-------------|
-| 1 | O → O | Positional advancement up dominance hierarchy |
-| 2 | D → D | Guard recovery or damage mitigation |
-| 3 | O → D | Attack fails/intercepted, loss of initiative |
-| 4 | D → O | Counter-attack, steal initiative |
-| 5 | N → O | Force dominant opening from equal start |
-| 6 | N → D | Concede ground from equal start |
-| 7 | D → N | Escape to reset (clean slate) |
-| 8 | N → N / S → S | Grip fighting, pummeling, neutral shootouts |
-| 9 | O/D → T | Terminal sink (submission tap) |
+| #   | Transition    | Description                                   |
+| --- | ------------- | --------------------------------------------- |
+| 1   | O → O         | Positional advancement up dominance hierarchy |
+| 2   | D → D         | Guard recovery or damage mitigation           |
+| 3   | O → D         | Attack fails/intercepted, loss of initiative  |
+| 4   | D → O         | Counter-attack, steal initiative              |
+| 5   | N → O         | Force dominant opening from equal start       |
+| 6   | N → D         | Concede ground from equal start               |
+| 7   | D → N         | Escape to reset (clean slate)                 |
+| 8   | N → N / S → S | Grip fighting, pummeling, neutral shootouts   |
+| 9   | O/D → T       | Terminal sink (submission tap)                |
 
 **Cardinal rule:** GameContext → GameContext direct edges are **forbidden**. All paths must flow:
 `GameContext --[TacticalPathway]--> TechniqueAction --[result]--> GameContext | TerminalSink`
@@ -136,6 +137,7 @@ The system **must reject** any graph mutation violating the Universal Transition
 ## Code Style Guidelines
 
 ### Imports
+
 - ES module imports (`import` / `export`).
 - Order: Node built-ins → external packages → `@/` internal modules → relative imports.
 - Use `type` keyword for type-only imports: `import type { GameContext } from '@/lib/types/nodes'`.
@@ -143,12 +145,14 @@ The system **must reject** any graph mutation violating the Universal Transition
 - Absolute imports use `@/` alias mapping to `src/`.
 
 ### Formatting & Linting
+
 - Single quotes, semicolons required.
 - Trailing commas where valid (ES5+).
 - 2-space indentation, 100-char line width.
 - Format on save. Prettier for formatting, ESLint for logic rules.
 
 ### TypeScript & Types
+
 - Strict mode: `strict: true` in `tsconfig.json`.
 - **MAML entities**: `interface` for all object shapes. Export as named interfaces (no `I` prefix).
 - **Unions & enums**: Use `type` for union types, `const` objects with `as const` for enum-like constants, or `enum` where serialization matters.
@@ -157,6 +161,7 @@ The system **must reject** any graph mutation violating the Universal Transition
 - Use `readonly` for array parameters in function signatures: `items: readonly TechniqueAction[]`.
 
 ### Naming Conventions
+
 - `PascalCase`: components, classes, interfaces, types, enums, repositories.
 - `camelCase`: functions, methods, variables, properties, route handlers.
 - `SCREAMING_SNAKE_CASE`: constants, env vars, Cypher query constants.
@@ -166,6 +171,7 @@ The system **must reject** any graph mutation violating the Universal Transition
 - Neo4j relationship types in SCREAMING_SNAKE_CASE: `[:TACTICAL_PATHWAY]`, `[:RESULTS_IN]`.
 
 ### Neo4j Repository Pattern
+
 ```typescript
 // One repository per entity, stateless methods, raw Cypher via typed driver
 class GameContextRepository {
@@ -189,6 +195,7 @@ class GameContextRepository {
 ```
 
 ### Error Handling
+
 - Repository methods throw typed `AppError` subclasses (not generic `Error`).
 - Validation failures throw `TransitionValidationError` with message explaining which rule was violated.
 - API routes wrap handlers in `try/catch`, returning structured `{ error: string, code: string }` JSON responses.
@@ -196,6 +203,7 @@ class GameContextRepository {
 - Use `Result<T, E>` pattern (discriminated union) for expected validation failures in the transitional validator.
 
 ### Component Conventions (React)
+
 - Functional components only. No class components.
 - Props typed with `interface` exported as `ComponentNameProps`.
 - Destructure props at the parameter level: `({ node, onSelect }: GameContextNodeProps)`.
@@ -203,6 +211,7 @@ class GameContextRepository {
 - One component per file. Co-locate `.test.ts` files adjacent to the component.
 
 ### API Route Conventions (Next.js App Router)
+
 ```typescript
 // src/app/api/v1/game-contexts/route.ts
 export async function GET(request: NextRequest): Promise<NextResponse> { ... }
@@ -215,11 +224,13 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
 ```
 
 ### State Management
+
 - **Server state**: No external query library — direct repository calls from API routes.
 - **Client state**: React context for graph state (selected node, viewport). Local component state for UI interactions.
 - **URL state**: Search params for canvas viewport and active node IDs (bookmarkable canvases).
 
 ### Testing
+
 - Write tests for behavior and validation rules, not implementation.
 - Use `describe`/`it` blocks, prefer `it` over `test`.
 - Repository tests use an in-memory Neo4j test fixture or a dedicated test database container.
@@ -229,12 +240,14 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
 - `@testing-library/react` for component tests (query by role/text, never by test-id unless necessary).
 
 ### Testing Priorities (in order)
+
 1. TransitionalValidator — all 9 permitted + all forbidden transitions
 2. Repository CRUD — create, read, update, delete each entity type
 3. API routes — request/response contracts, error codes, edge cases
 4. Canvas UI — node rendering, edge labeling, color coding
 
 ### Commits
+
 - Conventional Commits: `feat:`, `fix:`, `chore:`, `refactor:`, `docs:`, `test:`.
 - Keep commits atomic and focused (one concern per commit).
 - Use present tense imperative: "Add GameContext CRUD repository" not "Added".

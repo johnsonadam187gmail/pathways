@@ -1,14 +1,14 @@
 // Main Canvas Page — MAML Tactical Graph Viewer
 "use client";
 
-import { useMemo } from "react";
 import type { Node, Edge } from "reactflow";
 import GraphCanvas from "@/components/canvas/GraphCanvas";
 
 // Demo seed data — removed when Neo4j connection is live
 const DEMO_NODES: Node[] = [
+  // ── GameContexts ────────────────────────────────────────────────────────────
   {
-    id: "gc-1",
+    id: "gc-closed-guard",
     type: "graphNode",
     position: { x: 0, y: 0 },
     data: {
@@ -19,20 +19,43 @@ const DEMO_NODES: Node[] = [
     },
   },
   {
-    id: "gc-2",
+    id: "gc-half-guard",
     type: "graphNode",
-    position: { x: 300, y: 0 },
+    position: { x: -200, y: 400 },
     data: {
-      label: "Open Guard",
+      label: "Half Guard Bottom",
       type: "game-context",
-      relative_role: "NEUTRAL",
-      subtitle: "Danger: 4",
+      relative_role: "DEFENSIVE",
+      subtitle: "Danger: 5",
     },
   },
   {
-    id: "ta-1",
+    id: "gc-mount",
     type: "graphNode",
-    position: { x: 150, y: 200 },
+    position: { x: 200, y: 400 },
+    data: {
+      label: "Mount",
+      type: "game-context",
+      relative_role: "OFFENSIVE",
+      subtitle: "Danger: 3",
+    },
+  },
+
+  // ── TechniqueActions ────────────────────────────────────────────────────────
+  {
+    id: "ta-hip-escape",
+    type: "graphNode",
+    position: { x: -200, y: 200 },
+    data: {
+      label: "Hip Escape",
+      type: "technique-action",
+      action_type: "ESCAPE",
+    },
+  },
+  {
+    id: "ta-scissor-sweep",
+    type: "graphNode",
+    position: { x: 200, y: 200 },
     data: {
       label: "Scissor Sweep",
       type: "technique-action",
@@ -40,11 +63,23 @@ const DEMO_NODES: Node[] = [
     },
   },
   {
-    id: "ts-1",
+    id: "ta-rnc",
     type: "graphNode",
-    position: { x: 450, y: 200 },
+    position: { x: 200, y: 600 },
     data: {
-      label: "Armbar Tap",
+      label: "Rear Naked Choke",
+      type: "technique-action",
+      action_type: "SUBMISSION",
+    },
+  },
+
+  // ── TerminalSinks ───────────────────────────────────────────────────────────
+  {
+    id: "ts-tap",
+    type: "graphNode",
+    position: { x: 200, y: 800 },
+    data: {
+      label: "Tap Out",
       type: "terminal-sink",
       sink_type: "SUBMISSION_SUCCESS",
     },
@@ -52,24 +87,67 @@ const DEMO_NODES: Node[] = [
 ];
 
 const DEMO_EDGES: Edge[] = [
+  // ── TACTICAL_PATHWAY: GameContext → TechniqueAction ─────────────────────────
   {
-    id: "tp-1",
-    source: "gc-1",
-    target: "ta-1",
+    id: "tp-hip-escape",
+    source: "gc-closed-guard",
+    target: "ta-hip-escape",
     type: "graphEdge",
     data: {
+      edge_type: "TACTICAL_PATHWAY",
+      trigger_condition: "Opponent postures up, losing pressure",
+      gateway_type: "STIMULUS_DRIVEN",
+    },
+  },
+  {
+    id: "tp-scissor-sweep",
+    source: "gc-closed-guard",
+    target: "ta-scissor-sweep",
+    type: "graphEdge",
+    data: {
+      edge_type: "TACTICAL_PATHWAY",
       trigger_condition: "Opponent over-commits weight forward",
       gateway_type: "STIMULUS_DRIVEN",
     },
   },
   {
-    id: "tp-2",
-    source: "gc-2",
-    target: "ts-1",
+    id: "tp-rnc",
+    source: "gc-mount",
+    target: "ta-rnc",
     type: "graphEdge",
     data: {
-      trigger_condition: "Arm isolated during transition",
-      gateway_type: "INTENT_DRIVEN",
+      edge_type: "TACTICAL_PATHWAY",
+      trigger_condition: "Opponent turns away, exposing back",
+      gateway_type: "STIMULUS_DRIVEN",
+    },
+  },
+
+  // ── RESULTS_IN: TechniqueAction → GameContext | TerminalSink ────────────────
+  {
+    id: "ri-hip-escape",
+    source: "ta-hip-escape",
+    target: "gc-half-guard",
+    type: "graphEdge",
+    data: {
+      edge_type: "RESULTS_IN",
+    },
+  },
+  {
+    id: "ri-scissor-sweep",
+    source: "ta-scissor-sweep",
+    target: "gc-mount",
+    type: "graphEdge",
+    data: {
+      edge_type: "RESULTS_IN",
+    },
+  },
+  {
+    id: "ri-rnc",
+    source: "ta-rnc",
+    target: "ts-tap",
+    type: "graphEdge",
+    data: {
+      edge_type: "RESULTS_IN",
     },
   },
 ];

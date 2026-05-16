@@ -7,7 +7,13 @@ import type {
   CreateGameContextInput,
   UpdateGameContextInput,
 } from "../../types/nodes";
-import { NotFoundError, DatabaseError } from "../../utils/errors";
+import { RelativeRole } from "../../types/enums";
+import { TransitionalValidator } from "./transitional-validator";
+import {
+  NotFoundError,
+  DatabaseError,
+  TransitionValidationError,
+} from "../../utils/errors";
 
 interface GameContextRecord {
   id: string;
@@ -119,6 +125,56 @@ export class GameContextRepository {
     } catch (err) {
       throw new DatabaseError(
         `Failed to delete GameContext: ${(err as Error).message}`,
+      );
+    } finally {
+      await session.close();
+    }
+  }
+
+  /**
+   * Link a TechniqueAction to this GameContext via a RESULTS_IN edge.
+   * This represents a technique resulting in a new positional state.
+   * Validates the full chain: source GameContext role → target GameContext role
+   * using the Universal Transitional Matrix.
+   */
+  async linkFromTechnique(
+    techniqueId: string,
+    gameContextId: string,
+  ): Promise<boolean> {
+    const session = this.getSession();
+    try {
+      const id = uuidv4();
+      const result = await session.run(GAME_CONTEXT.LINK_FROM_TECHNIQUE, {
+        technique_id: techniqueId,
+        game_context_id: gameContextId,
+        id,
+      });
+
+      if (result.records.length === 0) return false;
+
+      const record = result.records[0];
+      const sourceRoles = record.get("source_roles") as string[];
+
+      const targetGcProps = record.get("gc").properties as Record<
+        string,
+        unknown
+      >;
+      const targetRole = targetGcProps.relative_role as string;
+
+      const validator = new TransitionalValidator();
+
+      for (const sourceRole of sourceRoles) {
+        validator.assertValidTransition(
+          sourceRole as RelativeRole,
+          targetRole as RelativeRole,
+        );
+      }
+
+      return true;
+    } catch (err) {
+      if (err instanceof TransitionValidationError) throw err;
+      throw new DatabaseError(
+        `Failed to link TechniqueAction to GameContext: ${(err as Error).message}`,
       );
     } finally {
       await session.close();
