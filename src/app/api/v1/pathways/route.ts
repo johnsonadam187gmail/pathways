@@ -1,6 +1,7 @@
 // TacticalPathway API — GET (list) / POST (create)
 // TacticalPathway edges connect GameContext -> TechniqueAction
-// and are validated against the Universal Transitional Matrix
+// Full transitional validation (GC role -> GC role) occurs at RESULTS_IN creation,
+// since the pathway only goes GC->TA and the matrix governs GC->GC transitions.
 import { NextRequest, NextResponse } from "next/server";
 import { getDriver } from "@/lib/neo4j/driver";
 import { TacticalPathwayRepository } from "@/lib/neo4j/repositories/tactical-pathway.repository";
@@ -52,12 +53,30 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       );
     }
 
-    // Note: Full transitional validation (source GC role → target GC role) occurs
-    // when linking the TechniqueAction to a result GameContext via the RESULTS_IN edge
-    // in GameContextRepository.linkFromTechnique(). At pathway creation time, only
-    // entity existence is verified.
-
     const repo = new TacticalPathwayRepository(driver);
+
+    const existing = await repo.findBySourceAndTarget(
+      body.source_game_context_id,
+      body.target_technique_action_id,
+    );
+    if (existing) {
+      return NextResponse.json(
+        {
+          error: `A TacticalPathway already exists between GameContext '${body.source_game_context_id}' and TechniqueAction '${body.target_technique_action_id}'`,
+          code: "CONFLICT",
+          existing_id: existing.id,
+        },
+        { status: 409 },
+      );
+    }
+
+    // Transitional validation note:
+    // The Universal Transitional Matrix governs GameContext -> GameContext transitions.
+    // A TACTICAL_PATHWAY edge goes GameContext -> TechniqueAction (attempting a technique),
+    // which is always valid from any positional role. The matrix is enforced when the
+    // TechniqueAction RESULTS_IN edge connects to a target GameContext or TerminalSink.
+    // See: ResultsInRepository.create()
+
     const created = await repo.create(body);
     return NextResponse.json(created, { status: 201 });
   } catch (err) {

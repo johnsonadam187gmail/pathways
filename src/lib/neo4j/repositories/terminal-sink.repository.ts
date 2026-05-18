@@ -103,7 +103,7 @@ export class TerminalSinkRepository {
     const session = this.getSession();
     try {
       const result = await session.run(TERMINAL_SINK.DELETE, { id });
-      const deleted = result.records[0].get("deleted").toNumber();
+      const deleted = result.records[0].get("deleted") as number;
       return deleted > 0;
     } catch (err) {
       throw new DatabaseError(

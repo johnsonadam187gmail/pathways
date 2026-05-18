@@ -5,7 +5,7 @@ import type {
   TechniqueAction,
   TerminalSink,
 } from "@/lib/types/nodes";
-import type { TacticalPathway } from "@/lib/types/edges";
+import type { TacticalPathway, ResultsIn } from "@/lib/types/edges";
 import {
   RelativeRole,
   Sidedness,
@@ -61,6 +61,18 @@ export function createMockTerminalSink(
   return {
     id: "mock-ts-id",
     sink_type: SinkType.SUBMISSION_SUCCESS,
+    ...overrides,
+  };
+}
+
+export function createMockResultsIn(
+  overrides: Partial<ResultsIn> = {},
+): ResultsIn {
+  return {
+    id: "mock-ri-id",
+    source_id: "mock-ta-id",
+    target_id: "mock-gc-id",
+    target_labels: ["GameContext"],
     ...overrides,
   };
 }

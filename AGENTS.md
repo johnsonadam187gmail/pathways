@@ -8,6 +8,10 @@ Martial Arts Modelling Language (MAML) — Graph-native tactical analysis applic
 # Install dependencies
 npm install
 
+# Dev server (uses --webpack flag — required workaround for Turbopack + Tailwind
+# CSS v4 crash on Windows: https://github.com/vercel/next.js/issues/90860)
+npm run dev
+
 # Neo4j Desktop (required — install from https://neo4j.com/download/)
 # 1. Open Neo4j Desktop, create a DBMS with version 5.x
 # 2. Set password to match .env.local (default: password)
@@ -238,6 +242,20 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
 - Mock the Neo4j driver at the integration boundary for unit tests. Use a real Neo4j test instance for integration tests.
 - Test transitional matrix rules exhaustively — every permitted and forbidden transition.
 - `@testing-library/react` for component tests (query by role/text, never by test-id unless necessary).
+- Component tests must use `@jest-environment jsdom` docblock as the **very first comment** (before eslint directives).
+- Component tests use `@testing-library/jest-dom/jest-globals` (v6.x subpath import, not root).
+- API route tests mock Neo4j repositories via `jest.mock()` with factory functions.
+- All `require()` calls in test files need `// eslint-disable-next-line @typescript-eslint/no-require-imports`.
+
+### Testing Gotchas
+
+- **Docblock ordering**: `@jest-environment jsdom` must be the first block comment. A preceding `/* eslint-disable */` causes Jest's docblock parser to silently ignore the jsdom directive → `document is not defined`.
+- **React Flow mocking**: Must use `__esModule: true` + `default` export for default imports, plus named exports (e.g., `Background`, `Controls`, `MiniMap`).
+- **jest.fn() types**: `jest.fn().mockImplementation()` causes TS errors with typed destructured params. Fix: use `jest.fn((props: unknown) => { ... props as Record<string, unknown> })`.
+- **Component props in tests**: Use `as any` on props spread to bypass strict `NodeProps`/`EdgeProps` types. Add `/* eslint-disable @typescript-eslint/no-explicit-any */` at file level.
+- **Jest config**: `setupFilesAfterEnv` (not `setupFilesAfterSetup`) is the correct key for jest-dom setup.
+- **`NotFoundError`** takes 2 args: `(entityType: string, id: string)`.
+- **`@testing-library/jest-dom` v6.x**: Import from `@testing-library/jest-dom/jest-globals`, not root package.
 
 ### Testing Priorities (in order)
 
@@ -245,6 +263,27 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
 2. Repository CRUD — create, read, update, delete each entity type
 3. API routes — request/response contracts, error codes, edge cases
 4. Canvas UI — node rendering, edge labeling, color coding
+
+### Playwright MCP UI Verification Mandate
+
+Every feature development **must** be verified with Playwright end-to-end tests before
+commit. This includes:
+
+- **New components** — Verify rendering, interactivity, and edge states via Playwright.
+- **New API routes or data flows** — Verify the full request/response cycle through the
+  UI (not just via curl/unit tests).
+- **Layout changes** — Verify visual rendering across viewports.
+- **Seed/ demo data changes** — Verify all seed entities render correctly on the canvas.
+
+Run e2e tests with:
+
+```bash
+npm run test:e2e
+```
+
+Playwright MCP server is available (`@playwright/mcp` in devDependencies) for
+AI-assisted browser interaction during development. Use it to verify UI behavior
+without manually inspecting the browser.
 
 ### Commits
 

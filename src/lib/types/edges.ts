@@ -16,3 +16,16 @@ export type CreateTacticalPathwayInput = Omit<TacticalPathway, "id"> & {
 };
 
 export type UpdateTacticalPathwayInput = Partial<CreateTacticalPathwayInput>;
+
+// ─── ResultsIn (TechniqueAction → GameContext | TerminalSink) ──────────────────
+export interface ResultsIn {
+  id: string;
+  source_id: string;
+  target_id: string;
+  target_labels?: string[];
+}
+
+export type CreateResultsInInput = {
+  technique_id: string;
+  target_id: string;
+};

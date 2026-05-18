@@ -15,6 +15,7 @@ export function getDriver(): Driver {
   driver = neo4j.driver(uri, neo4j.auth.basic(user, password), {
     maxConnectionPoolSize: 10,
     connectionTimeout: 30_000,
+    disableLosslessIntegers: true,
     encrypted: process.env.NEO4J_ENCRYPTED === "true",
   });
 
@@ -28,10 +29,17 @@ export async function closeDriver(): Promise<void> {
   }
 }
 
-export async function verifyConnectivity(): Promise<boolean> {
+export async function verifyConnectivity(
+  timeoutMs: number = 3_000,
+): Promise<boolean> {
   const d = getDriver();
   try {
-    await d.verifyConnectivity();
+    await Promise.race([
+      d.verifyConnectivity(),
+      new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error("Connection timeout")), timeoutMs),
+      ),
+    ]);
     return true;
   } catch {
     return false;

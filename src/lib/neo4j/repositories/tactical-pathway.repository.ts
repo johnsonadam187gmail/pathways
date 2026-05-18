@@ -79,6 +79,30 @@ export class TacticalPathwayRepository {
     }
   }
 
+  async findBySourceAndTarget(
+    sourceId: string,
+    targetId: string,
+  ): Promise<TacticalPathway | null> {
+    const session = this.getSession();
+    try {
+      const result = await session.run(
+        TACTICAL_PATHWAY.FIND_BY_SOURCE_AND_TARGET,
+        {
+          source_id: sourceId,
+          target_id: targetId,
+        },
+      );
+      if (result.records.length === 0) return null;
+      return mapToTacticalPathway(result.records[0].get("tp").properties);
+    } catch (err) {
+      throw new DatabaseError(
+        `Failed to find TacticalPathway by source and target: ${(err as Error).message}`,
+      );
+    } finally {
+      await session.close();
+    }
+  }
+
   async create(data: CreateTacticalPathwayInput): Promise<TacticalPathway> {
     const session = this.getSession();
     try {
@@ -131,7 +155,7 @@ export class TacticalPathwayRepository {
     const session = this.getSession();
     try {
       const result = await session.run(TACTICAL_PATHWAY.DELETE, { id });
-      const deleted = result.records[0].get("deleted").toNumber();
+      const deleted = result.records[0].get("deleted") as number;
       return deleted > 0;
     } catch (err) {
       throw new DatabaseError(

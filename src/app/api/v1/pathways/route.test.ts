@@ -1,4 +1,4 @@
-import { describe, it, expect, jest } from "@jest/globals";
+import { describe, it, expect, jest, beforeEach } from "@jest/globals";
 import { NextRequest } from "next/server";
 import {
   createMockTacticalPathway,
@@ -10,6 +10,8 @@ import type { GameContext, TechniqueAction } from "@/lib/types/nodes";
 
 const mockFindAll = jest.fn<() => Promise<TacticalPathway[]>>();
 const mockCreate = jest.fn<() => Promise<TacticalPathway>>();
+const mockFindBySourceAndTarget =
+  jest.fn<() => Promise<TacticalPathway | null>>();
 const mockGcFindById = jest.fn<() => Promise<GameContext | null>>();
 const mockTaFindById = jest.fn<() => Promise<TechniqueAction | null>>();
 
@@ -21,6 +23,7 @@ jest.mock("@/lib/neo4j/repositories/tactical-pathway.repository", () => ({
   TacticalPathwayRepository: jest.fn(() => ({
     findAll: mockFindAll,
     create: mockCreate,
+    findBySourceAndTarget: mockFindBySourceAndTarget,
   })),
 }));
 
@@ -70,9 +73,14 @@ describe("TacticalPathway API — POST /api/v1/pathways", () => {
     execution_counter: 0,
   };
 
-  it("returns 201 when source and target exist", async () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
     mockGcFindById.mockResolvedValue(createMockGameContext({ id: "gc-1" }));
     mockTaFindById.mockResolvedValue(createMockTechniqueAction({ id: "ta-1" }));
+    mockFindBySourceAndTarget.mockResolvedValue(null);
+  });
+
+  it("returns 201 when source and target exist", async () => {
     const expected = createMockTacticalPathway({ id: "new-tp" });
     mockCreate.mockResolvedValue(expected);
 
@@ -88,9 +96,25 @@ describe("TacticalPathway API — POST /api/v1/pathways", () => {
     expect(body).toEqual(expected);
   });
 
+  it("returns 409 when duplicate pathway exists", async () => {
+    mockFindBySourceAndTarget.mockResolvedValue(
+      createMockTacticalPathway({ id: "existing-tp" }),
+    );
+
+    const request = new NextRequest("http://localhost:3000", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(validInput),
+    });
+    const response = await POST(request);
+    const body = await response.json();
+
+    expect(response.status).toBe(409);
+    expect(body).toMatchObject({ code: "CONFLICT" });
+  });
+
   it("returns 404 when source GameContext not found", async () => {
     mockGcFindById.mockResolvedValue(null);
-    mockTaFindById.mockResolvedValue(createMockTechniqueAction({ id: "ta-1" }));
 
     const request = new NextRequest("http://localhost:3000", {
       method: "POST",
@@ -105,7 +129,6 @@ describe("TacticalPathway API — POST /api/v1/pathways", () => {
   });
 
   it("returns 404 when target TechniqueAction not found", async () => {
-    mockGcFindById.mockResolvedValue(createMockGameContext({ id: "gc-1" }));
     mockTaFindById.mockResolvedValue(null);
 
     const request = new NextRequest("http://localhost:3000", {

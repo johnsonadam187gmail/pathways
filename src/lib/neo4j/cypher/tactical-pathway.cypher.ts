@@ -29,6 +29,11 @@ export const TACTICAL_PATHWAY = {
     RETURN tp, source, target
   `,
 
+  FIND_BY_SOURCE_AND_TARGET: `
+    MATCH (source:GameContext {id: $source_id})-[tp:TACTICAL_PATHWAY]->(target:TechniqueAction {id: $target_id})
+    RETURN tp
+  `,
+
   UPDATE: `
     MATCH ()-[tp:TACTICAL_PATHWAY {id: $id}]->()
     SET tp += $properties

@@ -5,7 +5,9 @@ import { describe, it, expect, jest } from "@jest/globals";
 import { render, screen } from "@testing-library/react";
 import "@testing-library/jest-dom/jest-globals";
 import GraphCanvas from "./GraphCanvas";
+import { GraphProvider } from "./GraphContext";
 import type { Node, Edge } from "reactflow";
+import type { ReactNode } from "react";
 
 jest.mock("reactflow", () => {
   const ReactFlowMock = jest.fn((props: unknown) => {
@@ -66,6 +68,7 @@ jest.mock("reactflow", () => {
     applyNodeChanges: jest.fn((_changes: unknown, nodes: unknown) => nodes),
     applyEdgeChanges: jest.fn((_changes: unknown, edges: unknown) => edges),
     MarkerType: { ArrowClosed: "arrowclosed" },
+    SelectionMode: { Partial: "partial" },
   };
 });
 
@@ -94,11 +97,21 @@ const sampleEdges: Edge[] = [
   },
 ];
 
+function renderWithProvider(
+  ui: ReactNode,
+  initialNodes?: Node[],
+  initialEdges?: Edge[],
+) {
+  return render(
+    <GraphProvider initialNodes={initialNodes} initialEdges={initialEdges}>
+      {ui}
+    </GraphProvider>,
+  );
+}
+
 describe("GraphCanvas", () => {
   it("renders ReactFlow with provided nodes and edges", () => {
-    render(
-      <GraphCanvas initialNodes={sampleNodes} initialEdges={sampleEdges} />,
-    );
+    renderWithProvider(<GraphCanvas />, sampleNodes, sampleEdges);
 
     expect(screen.getByTestId("rf-flow")).toBeInTheDocument();
     expect(screen.getByTestId("rf-node-count").textContent).toBe("2");
@@ -106,7 +119,7 @@ describe("GraphCanvas", () => {
   });
 
   it("renders without nodes and edges when not provided", () => {
-    render(<GraphCanvas />);
+    renderWithProvider(<GraphCanvas />);
 
     expect(screen.getByTestId("rf-flow")).toBeInTheDocument();
     expect(screen.getByTestId("rf-node-count").textContent).toBe("0");
@@ -114,7 +127,7 @@ describe("GraphCanvas", () => {
   });
 
   it("renders Background, Controls, and MiniMap", () => {
-    render(<GraphCanvas />);
+    renderWithProvider(<GraphCanvas />);
 
     expect(screen.getByTestId("rf-background")).toBeInTheDocument();
     expect(screen.getByTestId("rf-controls")).toBeInTheDocument();
@@ -122,7 +135,7 @@ describe("GraphCanvas", () => {
   });
 
   it("renders MiniMap with correct pannable and zoomable props", () => {
-    render(<GraphCanvas />);
+    renderWithProvider(<GraphCanvas />);
 
     const miniMap = screen.getByTestId("rf-minimap");
     expect(miniMap).toHaveAttribute("data-pannable", "true");
@@ -130,7 +143,7 @@ describe("GraphCanvas", () => {
   });
 
   it("renders MiniMap with role-based color function", () => {
-    render(<GraphCanvas />);
+    renderWithProvider(<GraphCanvas />);
 
     expect(screen.getByTestId("minimap-role-offensive").textContent).toBe(
       "#22c55e",
@@ -140,11 +153,11 @@ describe("GraphCanvas", () => {
     );
   });
 
-  it("enables fitView", () => {
-    render(<GraphCanvas />);
+  it("defers fitView to onInit (async node loading)", () => {
+    renderWithProvider(<GraphCanvas />);
     expect(screen.getByTestId("rf-flow")).toHaveAttribute(
       "data-fitview",
-      "true",
+      "false",
     );
   });
 });

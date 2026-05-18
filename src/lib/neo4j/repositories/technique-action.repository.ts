@@ -108,7 +108,7 @@ export class TechniqueActionRepository {
     const session = this.getSession();
     try {
       const result = await session.run(TECHNIQUE_ACTION.DELETE, { id });
-      const deleted = result.records[0].get("deleted").toNumber();
+      const deleted = result.records[0].get("deleted") as number;
       return deleted > 0;
     } catch (err) {
       throw new DatabaseError(
