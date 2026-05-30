@@ -11,6 +11,7 @@ import {
 } from "react";
 import GraphCanvas from "@/components/canvas/GraphCanvas";
 import NodeDetailPanel from "@/components/canvas/NodeDetailPanel";
+import SidebarPalette from "@/components/canvas/SidebarPalette";
 import { GraphProvider, useGraphState } from "@/components/canvas/GraphContext";
 import { useGraphLoader } from "@/lib/useGraphLoader";
 import { useGraphUrlState } from "@/lib/useGraphUrlState";
@@ -104,6 +105,7 @@ function CanvasWithLoader() {
       <Suspense fallback={null}>
         <UrlStateSync />
       </Suspense>
+      <SidebarPalette />
       <div className="flex-1">
         <GraphCanvas />
       </div>

@@ -1,12 +1,14 @@
 // Graph Canvas — React Flow wrapper rendering MAML graph
 "use client";
 
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import ReactFlow, {
   Background,
   Controls,
   MiniMap,
   MarkerType,
+  ReactFlowProvider,
+  useReactFlow,
   type Node,
   type Edge,
   SelectionMode,
@@ -14,8 +16,11 @@ import ReactFlow, {
 } from "reactflow";
 import GraphNode from "./GraphNode";
 import GraphEdge from "./GraphEdge";
+import NodeContextMenu from "./NodeContextMenu";
+import type { ContextMenuState } from "./NodeContextMenu";
 import { useGraphState } from "./GraphContext";
 import { useGraphPersistence } from "@/lib/useGraphPersistence";
+import { useGraphCreation } from "@/lib/useGraphCreation";
 
 const nodeTypes = { graphNode: GraphNode };
 const edgeTypes = { graphEdge: GraphEdge };
@@ -33,7 +38,7 @@ function onError(id: string, message: string) {
   console.warn(`[React Flow]: ${message}`);
 }
 
-export default function GraphCanvas() {
+function GraphCanvasInner() {
   const {
     nodes,
     edges,
@@ -43,6 +48,9 @@ export default function GraphCanvas() {
     setSelectedNodeId,
     setSelectedEdgeId,
   } = useGraphState();
+
+  const { screenToFlowPosition } = useReactFlow();
+  const { createFromType } = useGraphCreation();
 
   if (nodes.length > 0) {
     const unique = new Set(nodes.map((n) => `${n.position.x},${n.position.y}`));
@@ -71,6 +79,62 @@ export default function GraphCanvas() {
     handleEdgesDelete,
     handleConnect,
   } = useGraphPersistence();
+
+  // ─── Context Menu ─────────────────────────────────────────────────────────
+  const [contextMenu, setContextMenu] = useState<ContextMenuState>({
+    open: false,
+    x: 0,
+    y: 0,
+    type: "canvas",
+  });
+
+  const closeContextMenu = useCallback(() => {
+    setContextMenu((prev) => ({ ...prev, open: false }));
+  }, []);
+
+  const onNodeContextMenu = useCallback(
+    (event: React.MouseEvent, node: Node) => {
+      event.preventDefault();
+      setContextMenu({
+        open: true,
+        x: event.clientX,
+        y: event.clientY,
+        type: "node",
+        node,
+      });
+    },
+    [],
+  );
+
+  const onPaneContextMenu = useCallback((event: React.MouseEvent) => {
+    event.preventDefault();
+    setContextMenu({
+      open: true,
+      x: event.clientX,
+      y: event.clientY,
+      type: "canvas",
+    });
+  }, []);
+
+  const onDragOver = useCallback((event: React.DragEvent) => {
+    event.preventDefault();
+    event.dataTransfer.dropEffect = "move";
+  }, []);
+
+  const onDrop = useCallback(
+    (event: React.DragEvent) => {
+      event.preventDefault();
+      const type = event.dataTransfer.getData("application/reactflow");
+      if (!type) return;
+
+      const position = screenToFlowPosition({
+        x: event.clientX,
+        y: event.clientY,
+      });
+      createFromType(type, position);
+    },
+    [screenToFlowPosition, createFromType],
+  );
 
   const onInit = useCallback((instance: ReactFlowInstance) => {
     rfInstance.current = instance;
@@ -134,11 +198,15 @@ export default function GraphCanvas() {
         onNodeDragStop={handleNodeDragStop}
         onNodesDelete={handleNodesDelete}
         onEdgesDelete={handleEdgesDelete}
+        onNodeContextMenu={onNodeContextMenu}
+        onPaneContextMenu={onPaneContextMenu}
         onInit={onInit}
         nodeTypes={nodeTypes}
         edgeTypes={edgeTypes}
         defaultEdgeOptions={defaultEdgeOptions}
         onError={onError}
+        onDragOver={onDragOver}
+        onDrop={onDrop}
         fitView={false}
         selectionMode={SelectionMode.Partial}
         attributionPosition="bottom-left"
@@ -160,6 +228,15 @@ export default function GraphCanvas() {
           zoomable
         />
       </ReactFlow>
+      <NodeContextMenu menu={contextMenu} onClose={closeContextMenu} />
     </div>
+  );
+}
+
+export default function GraphCanvas() {
+  return (
+    <ReactFlowProvider>
+      <GraphCanvasInner />
+    </ReactFlowProvider>
   );
 }

@@ -2,6 +2,37 @@
 
 Martial Arts Modelling Language (MAML) — Graph-native tactical analysis application.
 
+## Project Status
+
+| Phase | Focus                                        | Status         |
+| ----- | -------------------------------------------- | -------------- |
+| P1    | Sidebar palette + drag-to-create             | ✅ Complete    |
+| P2    | Context menus + node operations              | ✅ Complete    |
+| P3    | Handle-to-handle connections + validation    | ❌ Not started |
+| P4    | Keyboard shortcuts                           | ❌ Not started |
+| P5    | Guided pathway filling + inline editing      | ❌ Not started |
+| P6    | Half-pathway prevention + cascade delete     | ❌ Not started |
+| P7    | UI polish (onboarding, loading, persistence) | ❌ Not started |
+
+### UI Components Added
+
+- **`SidebarPalette.tsx`** — Left sidebar with 3 draggable entity types (GameContext, TechniqueAction, TerminalSink). Uses HTML5 drag-and-drop with `application/reactflow` MIME type. Dispatch is handled by `createFromType` in the canvas.
+- **`NodeContextMenu.tsx`** — Right-click context menu for nodes and canvas background. Exports `ContextMenuState` interface. Menu items differ by node type (GC → New Branch/Decision/Edit/Delete, TA → New Result/Edit/Delete, TS → Edit/Delete, canvas → New Pathway/Paste). Uses fixed positioning at click coordinates. Closes on outside click or Escape.
+- **`useGraphCreation.ts`** — Hook with 6 creation functions: `createFullPathway` (5-part GC→TP→TA→RI→GC|TS chain), `createTechniqueChain` (TA→RI→GC|TS), `createTerminalSink` (standalone), `createBranch` (from existing GC), `createResultFromTechnique` (from existing TA), `createFromType` (DnD dispatcher).
+
+### Interaction Conventions
+
+| Action                      | Behavior                                           |
+| --------------------------- | -------------------------------------------------- |
+| Right-click GameContext     | Opens menu: New Branch, New Decision, Edit, Delete |
+| Right-click TechniqueAction | Opens menu: New Result, Edit, Delete               |
+| Right-click TerminalSink    | Opens menu: Edit, Delete                           |
+| Right-click blank canvas    | Opens menu: New Pathway, Paste                     |
+| Edit (menu)                 | Opens detail panel with node properties            |
+| Delete (menu)               | Removes node + connected edges                     |
+| Click outside menu          | Closes context menu                                |
+| Escape                      | Closes context menu                                |
+
 ## Build / Lint / Test Commands
 
 ```bash
@@ -70,6 +101,13 @@ src/
     (routes)/             # Page routes
   components/             # Reusable UI components
     canvas/               # Graph rendering (React Flow / SVG)
+      SidebarPalette.tsx  # Draggable entity palette (P1)
+      NodeContextMenu.tsx # Right-click context menus (P2)
+      GraphCanvas.tsx     # React Flow wrapper with DnD + context menu wiring
+      GraphContext.tsx    # Central state management
+      GraphNode.tsx       # Custom node renderer
+      GraphEdge.tsx       # Custom edge renderer
+      NodeDetailPanel.tsx # Node property inspector
   lib/
     neo4j/                # Neo4j driver connection & session management
       driver.ts           # Singleton driver instance
@@ -85,7 +123,18 @@ src/
       edges.ts            # TacticalPathway interface
       enums.ts            # All enum types (relative_role, action_type, etc.)
       validation.ts       # Transitional Matrix types & constants
+    useGraphCreation.ts   # Pathway chain creation hook (createFullPathway, createBranch, etc.)
+    useGraphPersistence.ts # Backend sync for position/connect/delete
+    useGraphLoader.ts     # Graph data loading from API
+    useGraphUrlState.ts   # URL state sync for canvas viewport
+    api-service.ts        # API fetch + transform
+    seed-data.ts          # Demo data (20 nodes, 22 edges)
     utils/                # Pure utility functions
+e2e/
+  ux-overhaul.spec.ts     # P1+P2 e2e tests (12 scenarios)
+  home.spec.ts            # Home page smoke tests
+  persistence.spec.ts     # Graph persistence tests
+  seed-data.spec.ts       # Seed data rendering tests
 ```
 
 ## MAML Data Schema
@@ -256,6 +305,9 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
 - **Jest config**: `setupFilesAfterEnv` (not `setupFilesAfterSetup`) is the correct key for jest-dom setup.
 - **`NotFoundError`** takes 2 args: `(entityType: string, id: string)`.
 - **`@testing-library/jest-dom` v6.x**: Import from `@testing-library/jest-dom/jest-globals`, not root package.
+- **`Node` import conflict**: In `NodeContextMenu.tsx`, `import type { Node } from "reactflow"` shadows the global DOM `Node` type needed by `contains()`. Use `import type { Node as FlowNode } from "reactflow"` and use `FlowNode` in the interface.
+- **Right-click e2e with React Flow**: Playwright's `click({ button: "right", force: true })` often fails on React Flow nodes behind the sidebar palette or overlapped by UI banners. Use `page.evaluate()` to dispatch a native `contextmenu` event on the node's DOM element instead. See the `dispatchContextMenu` helper in `e2e/ux-overhaul.spec.ts`.
+- **Context menu item clicks**: Fixed-position context menu items near viewport edges fail Playwright's actionability checks even with `force: true`. Use `.evaluate((el) => (el as HTMLButtonElement).click())` to click them.
 
 ### Testing Priorities (in order)
 

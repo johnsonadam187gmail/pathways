@@ -23,10 +23,17 @@ jest.mock("reactflow", () => {
       </div>
     );
   });
+  const ReactFlowProviderMock = jest.fn(
+    ({ children }: { children: React.ReactNode }) => <>{children}</>,
+  );
   return {
     __esModule: true,
     default: ReactFlowMock,
     ReactFlow: ReactFlowMock,
+    ReactFlowProvider: ReactFlowProviderMock,
+    useReactFlow: jest.fn(() => ({
+      screenToFlowPosition: jest.fn((pos: { x: number; y: number }) => pos),
+    })),
     Background: jest.fn((props: unknown) => {
       const { color, gap } = props as Record<string, unknown>;
       return (
