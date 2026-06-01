@@ -136,6 +136,7 @@ export default function NodeDetailPanel() {
         {selectedEdge && !found ? (
           <EdgeDetail
             edge={selectedEdge}
+            nodes={nodes}
             onClose={closePanel}
             onDataChange={handleEdgeDataChange}
             onDelete={handleDelete}
@@ -171,11 +172,18 @@ export default function NodeDetailPanel() {
 
 function EdgeDetail({
   edge,
+  nodes,
   onClose,
   onDataChange,
   onDelete,
 }: {
-  edge: { id: string; data?: Record<string, unknown> };
+  edge: {
+    id: string;
+    source?: string;
+    target?: string;
+    data?: Record<string, unknown>;
+  };
+  nodes: { id: string; data?: Record<string, unknown> }[];
   onClose: () => void;
   onDataChange: (field: string, value: unknown) => void;
   onDelete: () => void;
@@ -183,6 +191,15 @@ function EdgeDetail({
   const data = (edge.data ?? {}) as Record<string, unknown>;
   const edgeType = String(data.edge_type ?? "TACTICAL_PATHWAY");
   const isPathway = edgeType === "TACTICAL_PATHWAY";
+
+  const sourceNode = edge.source
+    ? nodes.find((n) => n.id === edge.source)
+    : null;
+  const targetNode = edge.target
+    ? nodes.find((n) => n.id === edge.target)
+    : null;
+  const sourceLabel = String(sourceNode?.data?.label ?? edge.source ?? "-");
+  const targetLabel = String(targetNode?.data?.label ?? edge.target ?? "-");
 
   return (
     <>
@@ -228,7 +245,7 @@ function EdgeDetail({
           </span>
         </div>
 
-        {isPathway && (
+        {isPathway ? (
           <>
             <div>
               <label className="mb-1 block text-[10px] font-medium text-on-surface-variant uppercase tracking-wider">
@@ -269,15 +286,28 @@ function EdgeDetail({
               {String(data.execution_counter ?? "0")}
             </NodeField>
           </>
+        ) : (
+          <div>
+            <label className="mb-1 block text-[10px] font-medium text-on-surface-variant uppercase tracking-wider">
+              Description
+            </label>
+            <textarea
+              value={String(data.description ?? "")}
+              onChange={(e) => onDataChange("description", e.target.value)}
+              rows={2}
+              placeholder="Describe this reaction..."
+              className="w-full rounded-lg border border-outline-variant/30 bg-surface-variant/30 px-3 py-2 text-sm text-on-surface outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/20 transition-colors resize-none"
+            />
+          </div>
         )}
 
-        <NodeField label="Edge ID" mono>
-          {edge.id}
-        </NodeField>
-        <NodeField label="Source">
-          {String(data._source ?? edge.id.split("→")[0] ?? "")}
-        </NodeField>
-        <NodeField label="Target">{String(data._target ?? "")}</NodeField>
+        <div className="border-t border-outline-variant/10 pt-3 mt-2 space-y-2">
+          <NodeField label="Edge ID" mono>
+            {edge.id}
+          </NodeField>
+          <NodeField label="Source Node">{sourceLabel}</NodeField>
+          <NodeField label="Target Node">{targetLabel}</NodeField>
+        </div>
       </div>
 
       <div className="p-4 border-t border-outline-variant/20">
