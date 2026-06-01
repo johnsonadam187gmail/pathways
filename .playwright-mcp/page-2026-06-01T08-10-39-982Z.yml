@@ -1,0 +1,58 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e6] [cursor=pointer]:
+    - button "Open Next.js Dev Tools" [ref=e7]:
+      - img [ref=e8]
+    - generic [ref=e11]:
+      - button "Open issues overlay" [ref=e12]:
+        - generic [ref=e13]:
+          - generic [ref=e14]: "1"
+          - generic [ref=e15]: "2"
+        - generic [ref=e16]:
+          - text: Issue
+          - generic [ref=e17]: s
+      - button "Collapse issues badge" [ref=e18]:
+        - img [ref=e19]
+  - generic [ref=e21]:
+    - navigation [ref=e22]:
+      - generic [ref=e23]:
+        - img [ref=e24]
+        - generic [ref=e28]: Pathways
+      - generic [ref=e29]:
+        - generic [ref=e30]:
+          - img [ref=e31]
+          - generic [ref=e34]: Cmd+K
+        - button "Toggle theme" [ref=e35]:
+          - img [ref=e36]
+        - button "Help" [ref=e38]:
+          - img [ref=e39]
+    - main [ref=e42]:
+      - generic [ref=e43]:
+        - complementary [ref=e44]:
+          - generic [ref=e45]:
+            - img [ref=e47]
+            - img [ref=e50]
+            - img [ref=e53]
+          - generic [ref=e56]: KEYS
+        - generic [ref=e59]:
+          - generic [ref=e61]:
+            - generic:
+              - img
+          - img [ref=e62]
+          - generic [ref=e64]:
+            - button "zoom in" [ref=e65] [cursor=pointer]:
+              - img [ref=e66]
+            - button "zoom out" [ref=e68] [cursor=pointer]:
+              - img [ref=e69]
+            - button "fit view" [ref=e71] [cursor=pointer]:
+              - img [ref=e72]
+            - button "toggle interactivity" [ref=e74] [cursor=pointer]:
+              - img [ref=e75]
+          - img "React Flow mini map" [ref=e78]
+        - complementary:
+          - generic [ref=e81]:
+            - img [ref=e82]
+            - paragraph [ref=e85]: Select a node or edge to inspect
+        - generic [ref=e86]:
+          - img [ref=e87]
+          - text: Loading graph data...
+  - alert [ref=e90]
