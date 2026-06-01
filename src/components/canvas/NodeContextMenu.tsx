@@ -1,17 +1,17 @@
-// Node Context Menu — Right-click menus for MAML graph entities
 "use client";
 
 import { useCallback, useEffect, useRef } from "react";
 import { useGraphState } from "./GraphContext";
 import { useGraphCreation } from "@/lib/useGraphCreation";
-import type { Node as FlowNode } from "reactflow";
+import type { Node as FlowNode, Edge as FlowEdge } from "reactflow";
 
 export interface ContextMenuState {
   open: boolean;
   x: number;
   y: number;
-  type: "node" | "canvas";
+  type: "node" | "edge" | "canvas";
   node?: FlowNode;
+  edge?: FlowEdge;
 }
 
 interface NodeContextMenuProps {
@@ -22,42 +22,53 @@ interface NodeContextMenuProps {
 const SEPARATOR = "---";
 
 type MenuItem =
-  | { label: string; action: string; icon?: string }
+  | { label: string; action: string; icon: string }
   | typeof SEPARATOR;
 
-function getMenuItems(type: "node" | "canvas", nodeType?: string): MenuItem[] {
+function getMenuItems(
+  type: "node" | "edge" | "canvas",
+  nodeType?: string,
+): MenuItem[] {
   if (type === "canvas") {
     return [
-      { label: "New Pathway", action: "new-pathway", icon: "➕" },
-      { label: "Paste", action: "paste", icon: "📋" },
+      { label: "New Pathway", action: "new-pathway", icon: "plus" },
+      { label: "Paste", action: "paste", icon: "clipboard" },
+    ];
+  }
+
+  if (type === "edge") {
+    return [
+      { label: "Edit Decision", action: "edit-edge", icon: "edit" },
+      SEPARATOR,
+      { label: "Delete", action: "delete-edge", icon: "trash" },
     ];
   }
 
   switch (nodeType) {
     case "game-context":
       return [
-        { label: "New Branch", action: "new-branch", icon: "🌿" },
-        { label: "New Decision", action: "new-decision", icon: "🔀" },
+        { label: "New Branch", action: "new-branch", icon: "git-branch" },
+        { label: "New Decision", action: "new-decision", icon: "shuffle" },
         SEPARATOR,
-        { label: "Edit", action: "edit", icon: "✏️" },
-        { label: "Delete", action: "delete", icon: "🗑️" },
+        { label: "Edit", action: "edit", icon: "edit" },
+        { label: "Delete", action: "delete", icon: "trash" },
       ];
     case "technique-action":
       return [
-        { label: "New Result", action: "new-result", icon: "🎯" },
+        { label: "New Result", action: "new-result", icon: "target" },
         SEPARATOR,
-        { label: "Edit", action: "edit", icon: "✏️" },
-        { label: "Delete", action: "delete", icon: "🗑️" },
+        { label: "Edit", action: "edit", icon: "edit" },
+        { label: "Delete", action: "delete", icon: "trash" },
       ];
     case "terminal-sink":
       return [
-        { label: "Edit", action: "edit", icon: "✏️" },
-        { label: "Delete", action: "delete", icon: "🗑️" },
+        { label: "Edit", action: "edit", icon: "edit" },
+        { label: "Delete", action: "delete", icon: "trash" },
       ];
     default:
       return [
-        { label: "Edit", action: "edit", icon: "✏️" },
-        { label: "Delete", action: "delete", icon: "🗑️" },
+        { label: "Edit", action: "edit", icon: "edit" },
+        { label: "Delete", action: "delete", icon: "trash" },
       ];
   }
 }
@@ -71,7 +82,6 @@ export default function NodeContextMenu({
     setSelectedEdgeId,
     removeNodes,
     removeEdges,
-    nodes,
     edges,
   } = useGraphState();
   const { createBranch, createResultFromTechnique, createFullPathway } =
@@ -79,7 +89,6 @@ export default function NodeContextMenu({
 
   const menuRef = useRef<HTMLDivElement>(null);
 
-  // Close on click outside
   useEffect(() => {
     if (!menu.open) return;
     const handleClick = (e: MouseEvent) => {
@@ -90,7 +99,6 @@ export default function NodeContextMenu({
     const handleEsc = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
     };
-    // Delay adding listener to avoid the right-click itself triggering close
     const id = setTimeout(() => {
       document.addEventListener("click", handleClick);
       document.addEventListener("keydown", handleEsc);
@@ -107,16 +115,26 @@ export default function NodeContextMenu({
       onClose();
 
       switch (action) {
-        case "edit": {
+        case "edit":
+        case "edit-edge": {
           if (menu.node) {
             setSelectedNodeId(menu.node.id);
+            setSelectedEdgeId(null);
+          } else if (menu.edge) {
+            setSelectedEdgeId(menu.edge.id);
+            setSelectedNodeId(null);
+          }
+          break;
+        }
+        case "delete-edge": {
+          if (menu.edge) {
+            removeEdges([menu.edge.id]);
             setSelectedEdgeId(null);
           }
           break;
         }
         case "delete": {
           if (menu.node) {
-            // Remove connected edges first
             const connectedEdges = edges
               .filter(
                 (e) => e.source === menu.node!.id || e.target === menu.node!.id,
@@ -137,7 +155,6 @@ export default function NodeContextMenu({
           break;
         }
         case "new-decision": {
-          // Same as new-branch for now — creates a different technique path
           if (menu.node) {
             createBranch(menu.node.id, {
               x: menu.node.position.x + 40,
@@ -157,7 +174,6 @@ export default function NodeContextMenu({
           break;
         }
         case "paste": {
-          // Future: clipboard paste of pathway data
           break;
         }
       }
@@ -180,10 +196,24 @@ export default function NodeContextMenu({
 
   const items = getMenuItems(menu.type, menu.node?.data?.type as string);
 
+  const iconMap: Record<string, string> = {
+    plus: "M12 5v14M5 12h14",
+    clipboard:
+      "M16 4h2a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h2M15 2H9a1 1 0 00-1 1v2a1 1 0 001 1h6a1 1 0 001-1V3a1 1 0 00-1-1z",
+    "git-branch":
+      "M6 3v12M18 9a3 3 0 100-6 3 3 0 000 6zM6 21a3 3 0 100-6 3 3 0 000 6zM18 9a3 3 0 01-3 3h-3a3 3 0 00-3 3",
+    shuffle: "M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5",
+    edit: "M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z",
+    trash:
+      "M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2",
+    target:
+      "M12 2a10 10 0 1010 10M12 2v4M12 2a10 10 0 0110 10M22 12h-4M12 18a6 6 0 100-12 6 6 0 000 12zM12 14a2 2 0 100-4 2 2 0 000 4z",
+  };
+
   return (
     <div
       ref={menuRef}
-      className="fixed z-50 min-w-44 rounded-lg border border-gray-200 bg-white py-1 shadow-lg"
+      className="fixed z-50 min-w-44 rounded-xl glass-strong py-1"
       style={{ left: menu.x, top: menu.y }}
       role="menu"
       data-testid="context-menu"
@@ -192,22 +222,26 @@ export default function NodeContextMenu({
         item === SEPARATOR ? (
           <div
             key={`sep-${i}`}
-            className="my-1 border-t border-gray-100"
+            className="my-1 border-t border-outline-variant/20"
             role="separator"
           />
         ) : (
           <button
             key={item.action}
             onClick={() => handleAction(item.action)}
-            className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-xs text-gray-700 hover:bg-gray-100"
+            className="flex w-full items-center gap-2.5 px-3 py-1.5 text-left text-xs text-on-surface hover:bg-surface-variant/50 transition-colors"
             role="menuitem"
             data-testid={`menu-item-${item.action}`}
           >
-            {item.icon && (
-              <span className="w-4 text-center text-xs" aria-hidden>
-                {item.icon}
-              </span>
-            )}
+            <svg
+              className="h-3.5 w-3.5 text-on-surface-variant shrink-0"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
+              <path d={iconMap[item.icon] ?? iconMap.edit} />
+            </svg>
             <span>{item.label}</span>
           </button>
         ),

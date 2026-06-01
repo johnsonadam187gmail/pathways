@@ -1,4 +1,3 @@
-// Custom Graph Edge — displays trigger_condition text on the edge label
 "use client";
 
 import { memo } from "react";
@@ -43,30 +42,34 @@ function GraphEdge({
         id={id}
         path={edgePath}
         style={{
-          stroke: selected ? "#6366f1" : isPathway ? "#94a3b8" : "#8b5cf6",
+          stroke: selected ? "#a78bfa" : isPathway ? "#52525b" : "#8b5cf6",
           strokeWidth: selected ? 2.5 : 1.5,
           strokeDasharray: isPathway ? "none" : "6 3",
         }}
       />
       <EdgeLabelRenderer>
         <div
-          className="absolute rounded bg-white px-2 py-1 text-[10px] font-medium text-gray-700 shadow-sm"
+          className="absolute rounded-lg px-2.5 py-1 text-[10px] font-medium shadow-lg transition-colors"
           style={{
             transform: `translate(-50%, -50%) translate(${labelX}px,${labelY}px)`,
             pointerEvents: "none",
             maxWidth: 180,
-            border: isPathway ? "1px solid #e2e8f0" : "1px solid #ddd6fe",
+            background: "var(--surface)",
+            color: "var(--on-surface-variant)",
+            border: isPathway
+              ? "1px solid var(--outline-variant)"
+              : "1px solid rgba(139,92,246,0.3)",
           }}
         >
           {isPathway ? (
             <>
               {data?.gateway_type === "STIMULUS_DRIVEN" && (
-                <span className="mr-1 text-amber-500">⚡</span>
+                <span className="mr-1 text-maml-danger">⚡</span>
               )}
               {data?.trigger_condition}
             </>
           ) : (
-            <span className="text-violet-600">Results In →</span>
+            <span style={{ color: "var(--primary)" }}>Results In →</span>
           )}
         </div>
       </EdgeLabelRenderer>

@@ -33,6 +33,7 @@ export interface GraphState {
   removeNodes: (ids: string[]) => void;
   addEdge: (edge: Edge) => void;
   removeEdges: (ids: string[]) => void;
+  updateEdge: (id: string, data: Partial<Edge["data"]>) => void;
   setSelectedNodeId: (id: string | null) => void;
   setSelectedEdgeId: (id: string | null) => void;
   setViewport: (viewport: Viewport) => void;
@@ -90,6 +91,14 @@ export function GraphProvider({
     setEdges((prev) => prev.filter((e) => !ids.includes(e.id)));
   }, []);
 
+  const updateEdge = useCallback((id: string, data: Partial<Edge["data"]>) => {
+    setEdges((prev) =>
+      prev.map((e) =>
+        e.id === id ? { ...e, data: { ...e.data, ...data } } : e,
+      ),
+    );
+  }, []);
+
   const onNodesChange = useCallback(
     (changes: NodeChange[]) =>
       setNodes((nds) => applyNodeChanges(changes, nds)),
@@ -128,6 +137,7 @@ export function GraphProvider({
       removeNodes,
       addEdge,
       removeEdges,
+      updateEdge,
       setSelectedNodeId,
       setSelectedEdgeId,
       setViewport,
@@ -146,6 +156,7 @@ export function GraphProvider({
       removeNodes,
       addEdge,
       removeEdges,
+      updateEdge,
       onNodesChange,
       onEdgesChange,
       onConnect,

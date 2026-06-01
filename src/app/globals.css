@@ -1,49 +1,186 @@
 @import "tailwindcss";
 @import "reactflow/dist/style.css";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+@custom-variant dark (&:where(.dark, .dark *));
 
-  /* MAML Role Colors */
+:root {
+  --background: #f8f9fa;
+  --surface: #ffffff;
+  --surface-container-low: #f1f3f5;
+  --surface-variant: #e9ecef;
+  --on-surface: #171717;
+  --on-surface-variant: #6b7280;
+  --outline-variant: #d4d4d8;
+  --sidebar-surface: #f8f9fa;
+  --canvas-dot: #e2e8f0;
+  --canvas-bg: #ffffff;
+  --toolbar-bg: #ffffff;
+  --toolbar-border: #e2e8f0;
+
+  --primary: #7c3aed;
+  --primary-container: #ede9fe;
+  --on-primary: #ffffff;
+  --on-primary-container: #4c1d95;
+
   --maml-offensive: #22c55e;
   --maml-defensive: #ef4444;
   --maml-neutral: #64748b;
   --maml-symmetrical-danger: #f59e0b;
   --maml-technique: #8b5cf6;
   --maml-terminal: #1e293b;
+
+  --glass-bg: rgba(255, 255, 255, 0.7);
+  --glass-border: rgba(0, 0, 0, 0.06);
+  --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+}
+
+.dark {
+  --background: #0a0a0c;
+  --surface: #121214;
+  --surface-container-low: #1a1a1e;
+  --surface-variant: #27272a;
+  --on-surface: #f4f4f5;
+  --on-surface-variant: #a1a1aa;
+  --outline-variant: #3f3f46;
+  --sidebar-surface: #121214;
+  --canvas-dot: #2a2a30;
+  --canvas-bg: #1a1a1e;
+  --toolbar-bg: rgba(18, 18, 20, 0.85);
+  --toolbar-border: rgba(63, 63, 70, 0.3);
+
+  --primary: #a78bfa;
+  --primary-container: #4c1d95;
+  --on-primary: #ffffff;
+  --on-primary-container: #eaddff;
+
+  --glass-bg: rgba(18, 18, 20, 0.7);
+  --glass-border: rgba(255, 255, 255, 0.06);
+  --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
 }
 
 @theme inline {
   --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  --color-surface: var(--surface);
+  --color-surface-container-low: var(--surface-container-low);
+  --color-surface-variant: var(--surface-variant);
+  --color-on-surface: var(--on-surface);
+  --color-on-surface-variant: var(--on-surface-variant);
+  --color-outline-variant: var(--outline-variant);
+  --color-sidebar-surface: var(--sidebar-surface);
+  --color-canvas-bg: var(--canvas-bg);
+  --color-canvas-dot: var(--canvas-dot);
+  --color-toolbar-bg: var(--toolbar-bg);
+  --color-toolbar-border: var(--toolbar-border);
+  --color-primary: var(--primary);
+  --color-primary-container: var(--primary-container);
+  --color-on-primary: var(--on-primary);
+  --color-on-primary-container: var(--on-primary-container);
+  --color-maml-offensive: var(--maml-offensive);
+  --color-maml-defensive: var(--maml-defensive);
+  --color-maml-neutral: var(--maml-neutral);
+  --color-maml-danger: var(--maml-symmetrical-danger);
+  --color-maml-technique: var(--maml-technique);
+  --color-maml-terminal: var(--maml-terminal);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
 body {
   background: var(--background);
-  color: var(--foreground);
-  font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+  color: var(--on-surface);
+  font-family: var(--font-sans), Inter, sans-serif;
 }
 
-/* React Flow overrides */
+* {
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease;
+}
+
+.graph-grid {
+  background-size: 40px 40px;
+  background-image:
+    linear-gradient(to right, var(--canvas-dot) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--canvas-dot) 1px, transparent 1px);
+}
+
+.glass {
+  background: var(--glass-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+}
+
+.glass-strong {
+  background: var(--glass-bg);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--outline-variant);
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--on-surface-variant);
+}
+
 .react-flow__node {
   cursor: pointer;
 }
 
 .react-flow__edge-textbg {
-  fill: white;
+  fill: var(--surface);
 }
 
 .react-flow__edge-text {
   font-size: 10px;
   font-weight: 500;
+}
+
+.react-flow__background {
+  background: var(--canvas-bg) !important;
+}
+
+.react-flow__controls {
+  box-shadow: var(--glass-shadow) !important;
+  border: 1px solid var(--glass-border) !important;
+  border-radius: 8px !important;
+  overflow: hidden;
+}
+
+.react-flow__controls-button {
+  background: var(--glass-bg) !important;
+  border-bottom: 1px solid var(--glass-border) !important;
+  fill: var(--on-surface) !important;
+  width: 28px;
+  height: 28px;
+}
+
+.react-flow__controls-button:hover {
+  background: var(--surface-variant) !important;
+}
+
+.react-flow__minimap {
+  border: 1px solid var(--glass-border) !important;
+  border-radius: 8px !important;
+  overflow: hidden;
+  box-shadow: var(--glass-shadow) !important;
+}
+
+.react-flow__attribution {
+  display: none !important;
 }

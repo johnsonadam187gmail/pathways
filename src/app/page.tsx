@@ -1,4 +1,3 @@
-// Main Canvas Page — MAML Tactical Graph Viewer
 "use client";
 
 import {
@@ -13,6 +12,7 @@ import GraphCanvas from "@/components/canvas/GraphCanvas";
 import NodeDetailPanel from "@/components/canvas/NodeDetailPanel";
 import SidebarPalette from "@/components/canvas/SidebarPalette";
 import { GraphProvider, useGraphState } from "@/components/canvas/GraphContext";
+import { ThemeProvider, useTheme } from "@/components/ThemeProvider";
 import { useGraphLoader } from "@/lib/useGraphLoader";
 import { useGraphUrlState } from "@/lib/useGraphUrlState";
 import { SEED_NODES, SEED_EDGES } from "@/lib/seed-data";
@@ -20,6 +20,93 @@ import { SEED_NODES, SEED_EDGES } from "@/lib/seed-data";
 function UrlStateSync() {
   useGraphUrlState();
   return null;
+}
+
+function FloatingToolbar() {
+  const { theme, toggleTheme } = useTheme();
+
+  return (
+    <nav className="fixed top-3 left-1/2 -translate-x-1/2 z-50 flex items-center justify-between rounded-full h-10 px-5 w-[calc(100%-2rem)] max-w-5xl glass">
+      <div className="flex items-center gap-3">
+        <svg
+          className="h-5 w-5 text-primary"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+        >
+          <path d="M12 2L2 7l10 5 10-5-10-5z" />
+          <path d="M2 17l10 5 10-5" />
+          <path d="M2 12l10 5 10-5" />
+        </svg>
+        <span className="text-sm font-bold tracking-tight text-on-surface">
+          Pathways
+        </span>
+      </div>
+
+      <div className="flex items-center gap-1.5">
+        <div className="hidden md:flex items-center gap-1.5 rounded-full bg-surface-variant/50 px-3 py-1 text-xs text-on-surface-variant">
+          <svg
+            className="h-3.5 w-3.5"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth="2"
+          >
+            <circle cx="11" cy="11" r="8" />
+            <path d="m21 21-4.3-4.3" />
+          </svg>
+          <span className="text-[10px]">Cmd+K</span>
+        </div>
+
+        <button
+          onClick={toggleTheme}
+          className="flex h-7 w-7 items-center justify-center rounded-full text-on-surface-variant hover:text-on-surface hover:bg-surface-variant/50 transition-colors"
+          aria-label="Toggle theme"
+        >
+          {theme === "dark" ? (
+            <svg
+              className="h-3.5 w-3.5"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
+              <circle cx="12" cy="12" r="5" />
+              <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" />
+            </svg>
+          ) : (
+            <svg
+              className="h-3.5 w-3.5"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+            </svg>
+          )}
+        </button>
+
+        <button
+          className="flex h-7 w-7 items-center justify-center rounded-full text-on-surface-variant hover:text-on-surface hover:bg-surface-variant/50 transition-colors"
+          aria-label="Help"
+        >
+          <svg
+            className="h-3.5 w-3.5"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth="2"
+          >
+            <circle cx="12" cy="12" r="10" />
+            <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+            <path d="M12 17h.01" />
+          </svg>
+        </button>
+      </div>
+    </nav>
+  );
 }
 
 function CanvasWithLoader() {
@@ -43,11 +130,6 @@ function CanvasWithLoader() {
 
   const loadDemo = useCallback(() => {
     setUseDemo(true);
-    const posSample = SEED_NODES.slice(0, 3).map(
-      (n) => `${n.id}:(${n.position.x},${n.position.y})`,
-    );
-    console.log("[Canvas] loadDemo — sample positions:", posSample);
-    console.log("[Canvas] loadDemo — total nodes:", SEED_NODES.length);
     setNodes(SEED_NODES);
     setEdges(SEED_EDGES);
   }, [setNodes, setEdges]);
@@ -76,21 +158,33 @@ function CanvasWithLoader() {
   if (loadState === "error" && !useDemo) {
     return (
       <div className="flex h-full items-center justify-center">
-        <div className="rounded-lg border border-red-200 bg-red-50 p-6 text-center">
-          <p className="mb-2 text-sm font-medium text-red-800">
+        <div className="glass-strong rounded-xl p-6 text-center max-w-sm">
+          <div className="mb-3 flex justify-center">
+            <svg
+              className="h-8 w-8 text-maml-defensive"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
+              <circle cx="12" cy="12" r="10" />
+              <path d="M12 8v4M12 16h.01" />
+            </svg>
+          </div>
+          <p className="mb-1 text-sm font-medium text-on-surface">
             Failed to connect to database
           </p>
-          <p className="mb-4 text-xs text-red-600">{error}</p>
+          <p className="mb-4 text-xs text-on-surface-variant">{error}</p>
           <div className="flex justify-center gap-3">
             <button
               onClick={loadFromApi}
-              className="rounded bg-red-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-red-700"
+              className="rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-on-primary hover:opacity-90 transition-opacity"
             >
               Retry Connection
             </button>
             <button
               onClick={loadDemo}
-              className="rounded border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50"
+              className="rounded-lg border border-outline-variant bg-surface px-3 py-1.5 text-xs font-medium text-on-surface hover:bg-surface-variant transition-colors"
             >
               Load Demo Data
             </button>
@@ -111,16 +205,46 @@ function CanvasWithLoader() {
       </div>
       <NodeDetailPanel />
       {loadState === "loading" && (
-        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 rounded bg-blue-600 px-3 py-1.5 text-xs text-white shadow-lg">
+        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 rounded-full glass px-4 py-1.5 text-xs text-on-surface shadow-lg flex items-center gap-2">
+          <svg
+            className="h-3 w-3 animate-spin text-primary"
+            fill="none"
+            viewBox="0 0 24 24"
+          >
+            <circle
+              className="opacity-25"
+              cx="12"
+              cy="12"
+              r="10"
+              stroke="currentColor"
+              strokeWidth="4"
+            />
+            <path
+              className="opacity-75"
+              fill="currentColor"
+              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+            />
+          </svg>
           Loading graph data...
         </div>
       )}
       {useDemo && (
-        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-3 rounded bg-amber-100 px-3 py-1.5 text-xs text-amber-800 shadow-lg">
-          <span>Showing demo data</span>
+        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-3 rounded-full glass px-4 py-1.5 text-xs text-on-surface shadow-lg items-center">
+          <span className="flex items-center gap-1.5">
+            <svg
+              className="h-3 w-3 text-maml-danger"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
+              <path d="M12 9v4M12 17h.01" />
+            </svg>
+            Showing demo data
+          </span>
           <button
             onClick={loadFromApi}
-            className="font-medium underline hover:text-amber-900"
+            className="font-medium text-primary hover:underline"
           >
             Connect to DB
           </button>
@@ -132,35 +256,15 @@ function CanvasWithLoader() {
 
 export default function Home() {
   return (
-    <GraphProvider>
-      <div className="h-screen w-screen">
-        <header className="absolute left-0 right-0 top-0 z-10 flex h-12 items-center justify-between border-b border-gray-200 bg-white/80 px-4 backdrop-blur-sm">
-          <h1 className="text-sm font-bold uppercase tracking-wider text-gray-800">
-            Pathways
-            <span className="ml-2 font-normal text-gray-400">
-              MAML Tactical Graph
-            </span>
-          </h1>
-          <div className="flex items-center gap-3 text-xs text-gray-500">
-            <span className="hidden sm:inline">
-              Legend:{" "}
-              <span className="font-medium text-green-500">Offensive</span>{" "}
-              <span className="font-medium text-red-500">Defensive</span>{" "}
-              <span className="font-medium text-slate-500">Neutral</span>{" "}
-              <span className="font-medium text-amber-500">Danger</span>
-              {" | "}
-              <span className="font-medium text-violet-500">
-                Technique
-              </span>{" "}
-              <span className="font-medium text-slate-800">Terminal</span>
-            </span>
-          </div>
-        </header>
-
-        <main className="h-full pt-12">
-          <CanvasWithLoader />
-        </main>
-      </div>
-    </GraphProvider>
+    <ThemeProvider>
+      <GraphProvider>
+        <div className="h-screen w-screen bg-canvas-bg">
+          <FloatingToolbar />
+          <main className="h-full pt-14">
+            <CanvasWithLoader />
+          </main>
+        </div>
+      </GraphProvider>
+    </ThemeProvider>
   );
 }

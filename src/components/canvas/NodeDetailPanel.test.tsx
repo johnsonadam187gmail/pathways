@@ -48,7 +48,9 @@ function renderWithProvider(ui: ReactNode, initialNodes?: Node[]) {
 describe("NodeDetailPanel", () => {
   it("shows placeholder when no node is selected", () => {
     renderWithProvider(<NodeDetailPanel />, [gameContextNode]);
-    expect(screen.getByText("Select a node to inspect")).toBeInTheDocument();
+    expect(
+      screen.getByText("Select a node or edge to inspect"),
+    ).toBeInTheDocument();
   });
 
   it("shows placeholder when selected node is missing from nodes array", () => {
@@ -57,6 +59,8 @@ describe("NodeDetailPanel", () => {
         <NodeDetailPanel />
       </GraphProvider>,
     );
-    expect(screen.getByText("Select a node to inspect")).toBeInTheDocument();
+    expect(
+      screen.getByText("Select a node or edge to inspect"),
+    ).toBeInTheDocument();
   });
 });

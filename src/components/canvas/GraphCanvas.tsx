@@ -1,4 +1,3 @@
-// Graph Canvas — React Flow wrapper rendering MAML graph
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -27,13 +26,11 @@ const edgeTypes = { graphEdge: GraphEdge };
 
 const defaultEdgeOptions = {
   type: "smoothstep",
-  markerEnd: { type: MarkerType.ArrowClosed, color: "#94a3b8" },
-  style: { stroke: "#94a3b8", strokeWidth: 1.5 },
+  markerEnd: { type: MarkerType.ArrowClosed, color: "#52525b" },
+  style: { stroke: "#52525b", strokeWidth: 1.5 },
 };
 
 function onError(id: string, message: string) {
-  // Suppress false-positive "created a new nodeTypes or edgeTypes object"
-  // warning in development (React Flow v11 + React 19 compatibility)
   if (id === "002") return;
   console.warn(`[React Flow]: ${message}`);
 }
@@ -52,24 +49,6 @@ function GraphCanvasInner() {
   const { screenToFlowPosition } = useReactFlow();
   const { createFromType } = useGraphCreation();
 
-  if (nodes.length > 0) {
-    const unique = new Set(nodes.map((n) => `${n.position.x},${n.position.y}`));
-    console.log(
-      "[GraphCanvas] nodes:",
-      nodes.length,
-      "unique positions:",
-      unique.size,
-    );
-    if (unique.size < 3) {
-      console.log(
-        "[GraphCanvas] FIRST 5:",
-        nodes
-          .slice(0, 5)
-          .map((n) => `${n.id}:(${n.position.x},${n.position.y})`),
-      );
-    }
-  }
-
   const rfInstance = useRef<ReactFlowInstance | null>(null);
   const prevNodeCount = useRef(0);
 
@@ -80,7 +59,6 @@ function GraphCanvasInner() {
     handleConnect,
   } = useGraphPersistence();
 
-  // ─── Context Menu ─────────────────────────────────────────────────────────
   const [contextMenu, setContextMenu] = useState<ContextMenuState>({
     open: false,
     x: 0,
@@ -101,6 +79,21 @@ function GraphCanvasInner() {
         y: event.clientY,
         type: "node",
         node,
+      });
+    },
+    [],
+  );
+
+  const onEdgeContextMenu = useCallback(
+    (event: React.MouseEvent, edge: Edge) => {
+      event.preventDefault();
+      setContextMenu({
+        open: true,
+        x: event.clientX,
+        y: event.clientY,
+        type: "edge",
+        node: undefined,
+        edge,
       });
     },
     [],
@@ -187,7 +180,7 @@ function GraphCanvasInner() {
   );
 
   return (
-    <div className="h-full w-full">
+    <div className="h-full w-full graph-grid">
       <ReactFlow
         nodes={nodes}
         edges={edges}
@@ -199,6 +192,7 @@ function GraphCanvasInner() {
         onNodesDelete={handleNodesDelete}
         onEdgesDelete={handleEdgesDelete}
         onNodeContextMenu={onNodeContextMenu}
+        onEdgeContextMenu={onEdgeContextMenu}
         onPaneContextMenu={onPaneContextMenu}
         onInit={onInit}
         nodeTypes={nodeTypes}
@@ -213,9 +207,10 @@ function GraphCanvasInner() {
         deleteKeyCode={["Backspace", "Delete"]}
         multiSelectionKeyCode="Shift"
       >
-        <Background color="#e2e8f0" gap={20} size={1} />
-        <Controls />
+        <Background color="var(--canvas-dot)" gap={20} size={1} />
+        <Controls position="bottom-left" />
         <MiniMap
+          position="bottom-right"
           nodeColor={(node) => {
             const data = node.data as { relative_role?: string } | undefined;
             if (data?.relative_role === "OFFENSIVE") return "#22c55e";
@@ -226,6 +221,7 @@ function GraphCanvasInner() {
           }}
           pannable
           zoomable
+          style={{ background: "var(--surface-container-low)" }}
         />
       </ReactFlow>
       <NodeContextMenu menu={contextMenu} onClose={closeContextMenu} />

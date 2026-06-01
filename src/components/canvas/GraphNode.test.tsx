@@ -77,9 +77,8 @@ describe("GraphNode", () => {
   });
 
   it("does not render subtitle when absent", () => {
-    const { container } = renderNode();
-    const subtitles = container.querySelectorAll(".text-\\[10px\\]");
-    expect(subtitles.length).toBe(0);
+    const { queryByTestId } = renderNode();
+    expect(queryByTestId("subtitle")).toBeNull();
   });
 
   it("renders Handle components for source and target", () => {
@@ -94,13 +93,13 @@ describe("GraphNode", () => {
     renderNode({ relative_role: "OFFENSIVE" });
     const badge = screen.getByText("OFFENSIVE");
     const outerDiv = badge.parentElement?.parentElement;
-    expect(outerDiv).toHaveStyle({ background: "#22c55e" });
+    expect(outerDiv).toHaveStyle({ background: "rgba(34,197,94,0.15)" });
   });
 
   it("applies DEFENSIVE color role", () => {
     renderNode({ relative_role: "DEFENSIVE" });
     const badge = screen.getByText("DEFENSIVE");
     const outerDiv = badge.parentElement?.parentElement;
-    expect(outerDiv).toHaveStyle({ background: "#ef4444" });
+    expect(outerDiv).toHaveStyle({ background: "rgba(239,68,68,0.15)" });
   });
 });
