@@ -96,17 +96,12 @@ export default function NodeContextMenu({
         onClose();
       }
     };
-    const handleEsc = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
     const id = setTimeout(() => {
       document.addEventListener("click", handleClick);
-      document.addEventListener("keydown", handleEsc);
     }, 0);
     return () => {
       clearTimeout(id);
       document.removeEventListener("click", handleClick);
-      document.removeEventListener("keydown", handleEsc);
     };
   }, [menu.open, onClose]);
 

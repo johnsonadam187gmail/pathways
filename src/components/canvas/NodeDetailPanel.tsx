@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef } from "react";
 import { useGraphState } from "./GraphContext";
 
 const ROLE_COLORS: Record<string, { bg: string; text: string; dot: string }> = {
@@ -342,9 +343,17 @@ function NodeDetail({
   onDataChange: (field: string, value: unknown) => void;
   onDelete: () => void;
 }) {
+  const labelInputRef = useRef<HTMLInputElement>(null);
   const data = (node.data ?? {}) as Record<string, unknown>;
   const nodeType = (data.type as string | undefined) ?? "";
   const roleColor = ROLE_COLORS[data.relative_role as string];
+
+  useEffect(() => {
+    if (labelInputRef.current) {
+      labelInputRef.current.focus();
+      labelInputRef.current.select();
+    }
+  }, [node.id]);
 
   return (
     <>
@@ -401,6 +410,7 @@ function NodeDetail({
             Label
           </label>
           <input
+            ref={labelInputRef}
             id="node-label-input"
             type="text"
             value={String(data.label ?? "")}

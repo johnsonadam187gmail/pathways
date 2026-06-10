@@ -16,10 +16,12 @@ import ReactFlow, {
 } from "reactflow";
 import { TransitionalValidator } from "@/lib/neo4j/repositories/transitional-validator";
 import { RelativeRole } from "@/lib/types/enums";
+import { useKeyboardShortcuts } from "@/lib/useKeyboardShortcuts";
 import GraphNode from "./GraphNode";
 import GraphEdge from "./GraphEdge";
 import NodeContextMenu from "./NodeContextMenu";
 import type { ContextMenuState } from "./NodeContextMenu";
+import KeyboardShortcutsModal from "./KeyboardShortcutsModal";
 import { useGraphState } from "./GraphContext";
 import { useGraphPersistence } from "@/lib/useGraphPersistence";
 import { useGraphCreation } from "@/lib/useGraphCreation";
@@ -42,15 +44,19 @@ function GraphCanvasInner() {
   const {
     nodes,
     edges,
+    selectedNodeId,
     onNodesChange,
     onEdgesChange,
     addEdge,
     setSelectedNodeId,
     setSelectedEdgeId,
+    setNodes,
+    addNode,
   } = useGraphState();
 
   const { screenToFlowPosition } = useReactFlow();
-  const { createFromType } = useGraphCreation();
+  const { createFromType, createBranch, createFullPathway } =
+    useGraphCreation();
 
   const rfInstance = useRef<ReactFlowInstance | null>(null);
   const prevNodeCount = useRef(0);
@@ -70,6 +76,7 @@ function GraphCanvasInner() {
   });
 
   const [connectionError, setConnectionError] = useState<string | null>(null);
+  const [showShortcuts, setShowShortcuts] = useState(false);
   const validatorRef = useRef(new TransitionalValidator());
 
   useEffect(() => {
@@ -81,6 +88,100 @@ function GraphCanvasInner() {
   const closeContextMenu = useCallback(() => {
     setContextMenu((prev) => ({ ...prev, open: false }));
   }, []);
+
+  const handleEscape = useCallback(() => {
+    setShowShortcuts(false);
+    closeContextMenu();
+    setSelectedNodeId(null);
+    setSelectedEdgeId(null);
+  }, [closeContextMenu, setSelectedNodeId, setSelectedEdgeId]);
+
+  const handleEnterEdit = useCallback(
+    (nodeId: string) => {
+      setSelectedNodeId(nodeId);
+      setSelectedEdgeId(null);
+    },
+    [setSelectedNodeId, setSelectedEdgeId],
+  );
+
+  const handleTabBranch = useCallback(
+    (nodeId: string, position: { x: number; y: number }) => {
+      createBranch(nodeId, position);
+    },
+    [createBranch],
+  );
+
+  const handleNewPathway = useCallback(
+    (position: { x: number; y: number }) => {
+      createFullPathway(position);
+    },
+    [createFullPathway],
+  );
+
+  const handleToggleShortcuts = useCallback(() => {
+    setShowShortcuts((prev) => !prev);
+  }, []);
+
+  const handleNudgeNode = useCallback(
+    (nodeId: string, dx: number, dy: number) => {
+      setNodes(
+        nodes.map((n) =>
+          n.id === nodeId
+            ? { ...n, position: { x: n.position.x + dx, y: n.position.y + dy } }
+            : n,
+        ),
+      );
+    },
+    [nodes, setNodes],
+  );
+
+  const handleDuplicate = useCallback(
+    (nodeId: string) => {
+      const node = nodes.find((n) => n.id === nodeId);
+      if (!node) return;
+      const newId = `dup-${Date.now()}`;
+      addNode({
+        ...node,
+        id: newId,
+        position: { x: node.position.x + 50, y: node.position.y + 50 },
+        selected: false,
+        data: { ...node.data },
+      });
+      setSelectedNodeId(newId);
+    },
+    [nodes, addNode, setSelectedNodeId],
+  );
+
+  const handleSelectAll = useCallback(() => {
+    setNodes(nodes.map((n) => ({ ...n, selected: true })));
+  }, [nodes, setNodes]);
+
+  const getCenterPosition = useCallback(() => {
+    const { x, y } = screenToFlowPosition({
+      x: window.innerWidth / 2,
+      y: window.innerHeight / 2,
+    });
+    if (nodes.length === 0) return { x, y };
+    const maxX = Math.max(...nodes.map((n) => n.position.x));
+    const maxY = Math.max(...nodes.map((n) => n.position.y));
+    return { x: maxX + 400, y: Math.max(maxY + 100, y) };
+  }, [nodes, screenToFlowPosition]);
+
+  useKeyboardShortcuts({
+    nodes,
+    selectedNodeId,
+    contextMenuOpen: contextMenu.open,
+    shortcutsOpen: showShortcuts,
+    onEnterEdit: handleEnterEdit,
+    onTabBranch: handleTabBranch,
+    onNewPathway: handleNewPathway,
+    onToggleShortcuts: handleToggleShortcuts,
+    onEscape: handleEscape,
+    getCenterPosition,
+    onNudgeNode: handleNudgeNode,
+    onDuplicate: handleDuplicate,
+    onSelectAll: handleSelectAll,
+  });
 
   const onNodeContextMenu = useCallback(
     (event: React.MouseEvent, node: Node) => {
@@ -326,6 +427,7 @@ function GraphCanvasInner() {
           <span className="text-maml-defensive">{connectionError}</span>
         </div>
       )}
+      <KeyboardShortcutsModal open={showShortcuts} onClose={handleEscape} />
       <NodeContextMenu menu={contextMenu} onClose={closeContextMenu} />
     </div>
   );
