@@ -81,12 +81,34 @@ describe("GraphNode", () => {
     expect(queryByTestId("subtitle")).toBeNull();
   });
 
-  it("renders Handle components for source and target", () => {
-    renderNode();
+  it("renders only source handle for game-context nodes", () => {
+    renderNode({ type: "game-context" });
     const handles = screen.getAllByTestId("rf-handle");
-    expect(handles.length).toBe(2);
+    expect(handles).toHaveLength(1);
+    expect(handles[0]).toHaveAttribute("data-position", "bottom");
+  });
+
+  it("renders both handles for technique-action nodes", () => {
+    renderNode({
+      type: "technique-action",
+      action_type: "SWEEP",
+      label: "Scissor Sweep",
+    });
+    const handles = screen.getAllByTestId("rf-handle");
+    expect(handles).toHaveLength(2);
     expect(handles[0]).toHaveAttribute("data-position", "top");
     expect(handles[1]).toHaveAttribute("data-position", "bottom");
+  });
+
+  it("renders only target handle for terminal-sink nodes", () => {
+    renderNode({
+      type: "terminal-sink",
+      sink_type: "SUBMISSION_SUCCESS",
+      label: "Tap Out",
+    });
+    const handles = screen.getAllByTestId("rf-handle");
+    expect(handles).toHaveLength(1);
+    expect(handles[0]).toHaveAttribute("data-position", "top");
   });
 
   it("applies OFFENSIVE color role", () => {

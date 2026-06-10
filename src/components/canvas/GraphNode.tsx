@@ -56,6 +56,8 @@ const TYPE_COLORS: Record<
 
 function GraphNode({ data, selected }: NodeProps<GraphNodeData>) {
   const isContext = data.type === "game-context";
+  const isTechnique = data.type === "technique-action";
+  const isTerminal = data.type === "terminal-sink";
   const colors = isContext
     ? ROLE_COLORS[data.relative_role ?? "NEUTRAL"]
     : (TYPE_COLORS[data.type] ?? TYPE_COLORS["technique-action"]);
@@ -72,12 +74,15 @@ function GraphNode({ data, selected }: NodeProps<GraphNodeData>) {
         minWidth: 140,
       }}
     >
-      <Handle
-        type="target"
-        position={Position.Top}
-        className="!border-none !w-2 !h-2"
-        style={{ background: colors.border }}
-      />
+      {isTechnique || isTerminal ? (
+        <Handle
+          type="target"
+          position={Position.Top}
+          id="target"
+          className="!border-none !w-2 !h-2"
+          style={{ background: colors.border }}
+        />
+      ) : null}
 
       <div className="px-4 py-2.5 text-center">
         <div
@@ -107,12 +112,15 @@ function GraphNode({ data, selected }: NodeProps<GraphNodeData>) {
         )}
       </div>
 
-      <Handle
-        type="source"
-        position={Position.Bottom}
-        className="!border-none !w-2 !h-2"
-        style={{ background: colors.border }}
-      />
+      {isContext || isTechnique ? (
+        <Handle
+          type="source"
+          position={Position.Bottom}
+          id="source"
+          className="!border-none !w-2 !h-2"
+          style={{ background: colors.border }}
+        />
+      ) : null}
     </div>
   );
 }

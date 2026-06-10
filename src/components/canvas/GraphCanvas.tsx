@@ -10,9 +10,12 @@ import ReactFlow, {
   useReactFlow,
   type Node,
   type Edge,
+  type Connection,
   SelectionMode,
   type ReactFlowInstance,
 } from "reactflow";
+import { TransitionalValidator } from "@/lib/neo4j/repositories/transitional-validator";
+import { RelativeRole } from "@/lib/types/enums";
 import GraphNode from "./GraphNode";
 import GraphEdge from "./GraphEdge";
 import NodeContextMenu from "./NodeContextMenu";
@@ -41,7 +44,7 @@ function GraphCanvasInner() {
     edges,
     onNodesChange,
     onEdgesChange,
-    onConnect,
+    addEdge,
     setSelectedNodeId,
     setSelectedEdgeId,
   } = useGraphState();
@@ -65,6 +68,15 @@ function GraphCanvasInner() {
     y: 0,
     type: "canvas",
   });
+
+  const [connectionError, setConnectionError] = useState<string | null>(null);
+  const validatorRef = useRef(new TransitionalValidator());
+
+  useEffect(() => {
+    if (!connectionError) return;
+    const timer = setTimeout(() => setConnectionError(null), 4000);
+    return () => clearTimeout(timer);
+  }, [connectionError]);
 
   const closeContextMenu = useCallback(() => {
     setContextMenu((prev) => ({ ...prev, open: false }));
@@ -165,18 +177,102 @@ function GraphCanvasInner() {
     [setSelectedNodeId, setSelectedEdgeId],
   );
 
+  const isValidConnection = useCallback(
+    (connection: Connection): boolean => {
+      if (!connection.source || !connection.target) return false;
+      const sourceNode = nodes.find((n) => n.id === connection.source);
+      const targetNode = nodes.find((n) => n.id === connection.target);
+      if (!sourceNode || !targetNode) return false;
+      const sourceType = (sourceNode.data as Record<string, unknown>).type;
+      const targetType = (targetNode.data as Record<string, unknown>).type;
+      if (sourceType === "game-context" && targetType === "technique-action")
+        return true;
+      if (
+        sourceType === "technique-action" &&
+        (targetType === "game-context" || targetType === "terminal-sink")
+      )
+        return true;
+      return false;
+    },
+    [nodes],
+  );
+
   const onConnectHandler = useCallback(
-    (connection: {
-      source: string | null;
-      target: string | null;
-      sourceHandle: string | null;
-      targetHandle: string | null;
-    }) => {
+    (connection: Connection) => {
       if (!connection.source || !connection.target) return;
-      onConnect(connection as Parameters<typeof onConnect>[0]);
+
+      const sourceNode = nodes.find((n) => n.id === connection.source);
+      const targetNode = nodes.find((n) => n.id === connection.target);
+      if (!sourceNode || !targetNode) return;
+
+      const sourceData = sourceNode.data as Record<string, unknown>;
+      const targetData = targetNode.data as Record<string, unknown>;
+      const sourceType = sourceData.type as string;
+      const targetType = targetData.type as string;
+
+      const isPathway =
+        sourceType === "game-context" && targetType === "technique-action";
+      const isResult =
+        sourceType === "technique-action" &&
+        (targetType === "game-context" || targetType === "terminal-sink");
+
+      if (!isPathway && !isResult) return;
+
+      if (isResult && targetType === "game-context") {
+        const targetRole = targetData.relative_role as string | undefined;
+        if (targetRole) {
+          const incomingPathways = edges.filter(
+            (e) =>
+              e.target === connection.source &&
+              (e.data as Record<string, unknown>)?.edge_type ===
+                "TACTICAL_PATHWAY",
+          );
+          for (const pathway of incomingPathways) {
+            const sourceGc = nodes.find((n) => n.id === pathway.source);
+            if (!sourceGc) continue;
+            const sourceRole = (sourceGc.data as Record<string, unknown>)
+              .relative_role as string | undefined;
+            if (sourceRole) {
+              const result = validatorRef.current.validateTransition(
+                sourceRole as RelativeRole,
+                targetRole as RelativeRole,
+              );
+              if (!result.ok) {
+                setConnectionError(result.error);
+                return;
+              }
+            }
+          }
+        }
+      }
+
+      const edgeId = `edge-${connection.source}-${connection.target}-${Date.now()}`;
+
+      if (isPathway) {
+        addEdge({
+          id: edgeId,
+          source: connection.source,
+          target: connection.target,
+          type: "graphEdge",
+          data: {
+            edge_type: "TACTICAL_PATHWAY",
+            trigger_condition: "Manual connection",
+            gateway_type: "INTENT_DRIVEN",
+          },
+        });
+      } else {
+        addEdge({
+          id: edgeId,
+          source: connection.source,
+          target: connection.target,
+          type: "graphEdge",
+          data: { edge_type: "RESULTS_IN" },
+        });
+      }
+
       handleConnect({ source: connection.source, target: connection.target });
     },
-    [onConnect, handleConnect],
+    [nodes, edges, addEdge, handleConnect],
   );
 
   return (
@@ -187,6 +283,7 @@ function GraphCanvasInner() {
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onConnect={onConnectHandler}
+        isValidConnection={isValidConnection}
         onSelectionChange={onSelectionChange}
         onNodeDragStop={handleNodeDragStop}
         onNodesDelete={handleNodesDelete}
@@ -224,6 +321,11 @@ function GraphCanvasInner() {
           style={{ background: "var(--surface-container-low)" }}
         />
       </ReactFlow>
+      {connectionError && (
+        <div className="pointer-events-none absolute left-1/2 top-4 z-50 -translate-x-1/2 rounded-lg glass px-4 py-2 text-sm shadow-lg">
+          <span className="text-maml-defensive">{connectionError}</span>
+        </div>
+      )}
       <NodeContextMenu menu={contextMenu} onClose={closeContextMenu} />
     </div>
   );
