@@ -184,3 +184,76 @@ body {
 .react-flow__attribution {
   display: none !important;
 }
+
+.react-flow__handle {
+  transition: all 0.15s ease;
+}
+
+.react-flow__handle.connectable {
+  box-shadow:
+    0 0 0 2px var(--maml-offensive),
+    0 0 8px var(--maml-offensive);
+  background: var(--maml-offensive) !important;
+  border-color: var(--maml-offensive) !important;
+}
+
+.react-flow__handle.valid-target {
+  box-shadow:
+    0 0 0 3px var(--maml-offensive),
+    0 0 12px var(--maml-offensive);
+  background: var(--maml-offensive) !important;
+  border-color: var(--maml-offensive) !important;
+  transform: translateX(-50%) scale(1.3);
+}
+
+.react-flow__handle.invalid-target {
+  box-shadow:
+    0 0 0 3px var(--maml-defensive),
+    0 0 12px var(--maml-defensive);
+  background: var(--maml-defensive) !important;
+  border-color: var(--maml-defensive) !important;
+  transform: translateX(-50%) scale(1.3);
+}
+
+.react-flow__connectionline {
+  stroke-width: 2;
+}
+
+.react-flow__connectionline.valid {
+  stroke: var(--maml-offensive);
+  stroke-dasharray: 4 4;
+  animation: dash-flow 1s linear infinite;
+}
+
+.react-flow__connectionline.invalid {
+  stroke: var(--maml-defensive);
+  stroke-dasharray: 6 3;
+  animation: dash-flow 1s linear infinite;
+}
+
+@keyframes dash-flow {
+  to {
+    stroke-dashoffset: -8;
+  }
+}
+
+.react-flow__connection {
+  pointer-events: none;
+}
+
+.react-flow__connection path {
+  transition:
+    stroke 0.2s ease,
+    stroke-width 0.2s ease;
+}
+
+.react-flow__connection.valid path {
+  stroke: var(--maml-offensive);
+  stroke-width: 2.5;
+}
+
+.react-flow__connection.invalid path {
+  stroke: var(--maml-defensive);
+  stroke-width: 2.5;
+  stroke-dasharray: 6 3;
+}

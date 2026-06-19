@@ -8,7 +8,7 @@ Martial Arts Modelling Language (MAML) — Graph-native tactical analysis applic
 | ----- | -------------------------------------------- | -------------- |
 | P1    | Sidebar palette + drag-to-create             | ✅ Complete    |
 | P2    | Context menus + node operations              | ✅ Complete    |
-| P3    | Handle-to-handle connections + validation    | ❌ Not started |
+| P3    | Handle-to-handle connections + validation    | ✅ Complete    |
 | P4    | Keyboard shortcuts                           | ❌ Not started |
 | P5    | Guided pathway filling + inline editing      | ❌ Not started |
 | P6    | Half-pathway prevention + cascade delete     | ❌ Not started |
@@ -18,20 +18,29 @@ Martial Arts Modelling Language (MAML) — Graph-native tactical analysis applic
 
 - **`SidebarPalette.tsx`** — Left sidebar with 3 draggable entity types (GameContext, TechniqueAction, TerminalSink). Uses HTML5 drag-and-drop with `application/reactflow` MIME type. Dispatch is handled by `createFromType` in the canvas.
 - **`NodeContextMenu.tsx`** — Right-click context menu for nodes and canvas background. Exports `ContextMenuState` interface. Menu items differ by node type (GC → New Branch/Decision/Edit/Delete, TA → New Result/Edit/Delete, TS → Edit/Delete, canvas → New Pathway/Paste). Uses fixed positioning at click coordinates. Closes on outside click or Escape.
-- **`useGraphCreation.ts`** — Hook with 6 creation functions: `createFullPathway` (5-part GC→TP→TA→RI→GC|TS chain), `createTechniqueChain` (TA→RI→GC|TS), `createTerminalSink` (standalone), `createBranch` (from existing GC), `createResultFromTechnique` (from existing TA), `createFromType` (DnD dispatcher).
+- **`GraphNode.tsx`** — Custom node renderer with visible connection handles (source at bottom for GC/TA, target at top for all). Handles styled as circular dots with color-coded borders matching node role/type.
+- **`GraphEdge.tsx`** — Custom edge renderer with Bezier curves. `TACTICAL_PATHWAY` = solid, `RESULTS_IN` = dashed. Labels show `trigger_condition` (with ⚡ for STIMULUS_DRIVEN) or "Results In →". Labels are clickable for future inline editing.
+- **`GraphCanvas.tsx`** — React Flow wrapper with DnD, context menus, and **handle-to-handle connections**. Implements `isValidConnection` for structural + transitional validation, `onConnect` with API persistence + rollback, and visual feedback (green/red connection line, handle glow).
+- **`useGraphCreation.ts`** — Hook with 6 creation functions: `createFullPathway` (5-part GC→TP→TA→RI→GC|TS chain), `createTechniqueChain` (TA→RI→GC|TS), `createTerminalSink` (standalone), `createBranch` (from existing GC, validates transitions), `createResultFromTechnique` (from existing TA), `createFromType` (DnD dispatcher).
+- **`lib/types/edges.ts`** — Added `ConnectionRule` type, `CONNECTION_RULES` registry, and `isValidStructuralConnection()` for declarative connection validation.
+- **`transitional-validator.ts`** — Used client-side during connection drag and programmatically to enforce Universal Transitional Matrix (9 permitted, 7 forbidden transitions).
 
 ### Interaction Conventions
 
-| Action                      | Behavior                                           |
-| --------------------------- | -------------------------------------------------- |
-| Right-click GameContext     | Opens menu: New Branch, New Decision, Edit, Delete |
-| Right-click TechniqueAction | Opens menu: New Result, Edit, Delete               |
-| Right-click TerminalSink    | Opens menu: Edit, Delete                           |
-| Right-click blank canvas    | Opens menu: New Pathway, Paste                     |
-| Edit (menu)                 | Opens detail panel with node properties            |
-| Delete (menu)               | Removes node + connected edges                     |
-| Click outside menu          | Closes context menu                                |
-| Escape                      | Closes context menu                                |
+| Action                        | Behavior                                                |
+| ----------------------------- | ------------------------------------------------------- |
+| Right-click GameContext       | Opens menu: New Branch, New Decision, Edit, Delete      |
+| Right-click TechniqueAction   | Opens menu: New Result, Edit, Delete                    |
+| Right-click TerminalSink      | Opens menu: Edit, Delete                                |
+| Right-click blank canvas      | Opens menu: New Pathway, Paste                          |
+| Edit (menu)                   | Opens detail panel with node properties                 |
+| Delete (menu)                 | Removes node + connected edges                          |
+| Click outside menu            | Closes context menu                                     |
+| Escape                        | Closes context menu                                     |
+| Drag handle (source → target) | Creates edge with validation (green=valid, red=invalid) |
+| Connect GC → TA               | Creates TACTICAL_PATHWAY edge                           |
+| Connect TA → GC/TS            | Creates RESULTS_IN edge (validates transitional matrix) |
+| Invalid connection attempt    | Shows error toast, edge rolled back on API failure      |
 
 ## Build / Lint / Test Commands
 
@@ -97,16 +106,17 @@ src/
         techniques/       # TechniqueAction CRUD
         pathways/         # TacticalPathway edge CRUD
         terminals/        # TerminalSink CRUD
+        results/          # RESULTS_IN edge CRUD (P3)
         telemetry/        # Telemetry stub (future)
     (routes)/             # Page routes
   components/             # Reusable UI components
     canvas/               # Graph rendering (React Flow / SVG)
       SidebarPalette.tsx  # Draggable entity palette (P1)
       NodeContextMenu.tsx # Right-click context menus (P2)
-      GraphCanvas.tsx     # React Flow wrapper with DnD + context menu wiring
+      GraphCanvas.tsx     # React Flow wrapper with DnD + context menu + handle-to-handle connections (P3)
       GraphContext.tsx    # Central state management
-      GraphNode.tsx       # Custom node renderer
-      GraphEdge.tsx       # Custom edge renderer
+      GraphNode.tsx       # Custom node renderer with visible handles
+      GraphEdge.tsx       # Custom edge renderer with interactive labels
       NodeDetailPanel.tsx # Node property inspector
   lib/
     neo4j/                # Neo4j driver connection & session management
@@ -116,15 +126,16 @@ src/
         technique-action.repository.ts
         tactical-pathway.repository.ts
         terminal-sink.repository.ts
-        transitional-validator.ts  # Transitional Matrix enforcement
+        results-in.repository.ts      # RESULTS_IN CRUD with transitional validation (P3)
+        transitional-validator.ts     # Transitional Matrix enforcement
       cypher/             # Raw Cypher queries as constants/functions
     types/                # MAML entity type definitions
       nodes.ts            # GameContext, TechniqueAction, TerminalSink interfaces
-      edges.ts            # TacticalPathway interface
+      edges.ts            # TacticalPathway, ResultsIn, ConnectionRule interfaces (P3)
       enums.ts            # All enum types (relative_role, action_type, etc.)
       validation.ts       # Transitional Matrix types & constants
     useGraphCreation.ts   # Pathway chain creation hook (createFullPathway, createBranch, etc.)
-    useGraphPersistence.ts # Backend sync for position/connect/delete
+    useGraphPersistence.ts # Backend sync for position/connect/delete with rollback (P3)
     useGraphLoader.ts     # Graph data loading from API
     useGraphUrlState.ts   # URL state sync for canvas viewport
     api-service.ts        # API fetch + transform

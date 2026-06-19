@@ -169,6 +169,8 @@ function buildEdges(): Edge[] {
       id: tp.id,
       source: tp.source_id,
       target: tp.target_id,
+      sourceHandle: "source",
+      targetHandle: "target",
       type: "graphEdge",
       data: {
         edge_type: "TACTICAL_PATHWAY",
@@ -183,6 +185,8 @@ function buildEdges(): Edge[] {
       id: ri.id,
       source: ri.source_id,
       target: ri.target_id,
+      sourceHandle: "source",
+      targetHandle: "target",
       type: "graphEdge",
       data: { edge_type: "RESULTS_IN" },
     });

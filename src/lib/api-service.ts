@@ -94,6 +94,8 @@ export function graphResponseToNodesEdges(data: GraphApiResponse): {
       id: tp.id as string,
       source: tp.source_id as string,
       target: tp.target_id as string,
+      sourceHandle: "source",
+      targetHandle: "target",
       type: "graphEdge",
       data: {
         edge_type: "TACTICAL_PATHWAY",
@@ -108,6 +110,8 @@ export function graphResponseToNodesEdges(data: GraphApiResponse): {
       id: ri.id as string,
       source: ri.source_id as string,
       target: ri.target_id as string,
+      sourceHandle: "source",
+      targetHandle: "target",
       type: "graphEdge",
       data: {
         edge_type: "RESULTS_IN",

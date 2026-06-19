@@ -16,6 +16,7 @@ import ReactFlow, {
 } from "reactflow";
 import { TransitionalValidator } from "@/lib/neo4j/repositories/transitional-validator";
 import { RelativeRole } from "@/lib/types/enums";
+import { isValidStructuralConnection, type NodeType } from "@/lib/types/edges";
 import { useKeyboardShortcuts } from "@/lib/useKeyboardShortcuts";
 import GraphNode from "./GraphNode";
 import GraphEdge from "./GraphEdge";
@@ -33,11 +34,15 @@ const defaultEdgeOptions = {
   type: "smoothstep",
   markerEnd: { type: MarkerType.ArrowClosed, color: "#52525b" },
   style: { stroke: "#52525b", strokeWidth: 1.5 },
+  connectionLineStyle: (isValid: boolean) =>
+    isValid
+      ? { stroke: "#22c55e", strokeWidth: 2, strokeDasharray: "0" }
+      : { stroke: "#ef4444", strokeWidth: 2, strokeDasharray: "6 3" },
+  connectionLineType: "smoothstep",
 };
 
 function onError(id: string, message: string) {
-  if (id === "002") return;
-  console.warn(`[React Flow]: ${message}`);
+  console.warn(`[React Flow error ${id}]: ${message}`);
 }
 
 function GraphCanvasInner() {
@@ -51,6 +56,7 @@ function GraphCanvasInner() {
     setSelectedNodeId,
     setSelectedEdgeId,
     setNodes,
+    setEdges,
     addNode,
   } = useGraphState();
 
@@ -284,22 +290,45 @@ function GraphCanvasInner() {
       const sourceNode = nodes.find((n) => n.id === connection.source);
       const targetNode = nodes.find((n) => n.id === connection.target);
       if (!sourceNode || !targetNode) return false;
-      const sourceType = (sourceNode.data as Record<string, unknown>).type;
-      const targetType = (targetNode.data as Record<string, unknown>).type;
-      if (sourceType === "game-context" && targetType === "technique-action")
+      const sourceData = sourceNode.data as Record<string, unknown>;
+      const targetData = targetNode.data as Record<string, unknown>;
+      const sourceType = sourceData.type as NodeType;
+      const targetType = targetData.type as NodeType;
+
+      if (!isValidStructuralConnection(sourceType, targetType)) return false;
+
+      if (sourceType === "technique-action" && targetType === "game-context") {
+        const targetRole = targetData.relative_role as string | undefined;
+        if (!targetRole) return false;
+        const incomingPathways = edges.filter(
+          (e) =>
+            e.target === connection.source &&
+            (e.data as Record<string, unknown>)?.edge_type ===
+              "TACTICAL_PATHWAY",
+        );
+        for (const pathway of incomingPathways) {
+          const sourceGc = nodes.find((n) => n.id === pathway.source);
+          if (!sourceGc) continue;
+          const sourceRole = (sourceGc.data as Record<string, unknown>)
+            .relative_role as string | undefined;
+          if (sourceRole) {
+            const result = validatorRef.current.validateTransition(
+              sourceRole as RelativeRole,
+              targetRole as RelativeRole,
+            );
+            if (!result.ok) return false;
+          }
+        }
         return true;
-      if (
-        sourceType === "technique-action" &&
-        (targetType === "game-context" || targetType === "terminal-sink")
-      )
-        return true;
-      return false;
+      }
+
+      return true;
     },
-    [nodes],
+    [nodes, edges],
   );
 
   const onConnectHandler = useCallback(
-    (connection: Connection) => {
+    async (connection: Connection) => {
       if (!connection.source || !connection.target) return;
 
       const sourceNode = nodes.find((n) => n.id === connection.source);
@@ -371,9 +400,19 @@ function GraphCanvasInner() {
         });
       }
 
-      handleConnect({ source: connection.source, target: connection.target });
+      const apiResult = await handleConnect({
+        source: connection.source,
+        target: connection.target,
+      });
+
+      if (!apiResult.ok) {
+        setEdges((prevEdges: Edge[]) =>
+          prevEdges.filter((e: Edge) => e.id !== edgeId),
+        );
+        setConnectionError(apiResult.error || "Failed to persist connection");
+      }
     },
-    [nodes, edges, addEdge, handleConnect],
+    [nodes, edges, addEdge, handleConnect, setEdges],
   );
 
   return (

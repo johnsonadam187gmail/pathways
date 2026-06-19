@@ -4,6 +4,8 @@
 import { useCallback } from "react";
 import type { Node, Edge } from "reactflow";
 import { useGraphState } from "@/components/canvas/GraphContext";
+import { TransitionalValidator } from "@/lib/neo4j/repositories/transitional-validator";
+import { RelativeRole } from "@/lib/types/enums";
 
 let idCounter = 0;
 function genId(prefix: string): string {
@@ -15,6 +17,8 @@ const GC_SPACING_X = 160;
 const TA_SPACING_X = 240;
 const VERTICAL_OFFSET = 60;
 const RESULT_SPACING_X = 360;
+
+const validator = new TransitionalValidator();
 
 export function useGraphCreation() {
   const { addNode, addEdge } = useGraphState();
@@ -75,6 +79,8 @@ export function useGraphCreation() {
         id: tpId,
         source: gcId,
         target: taId,
+        sourceHandle: "source",
+        targetHandle: "target",
         type: "graphEdge",
         data: {
           edge_type: "TACTICAL_PATHWAY",
@@ -87,6 +93,8 @@ export function useGraphCreation() {
         id: riId,
         source: taId,
         target: resultId,
+        sourceHandle: "source",
+        targetHandle: "target",
         type: "graphEdge",
         data: {
           edge_type: "RESULTS_IN",
@@ -143,6 +151,8 @@ export function useGraphCreation() {
         id: riId,
         source: taId,
         target: resultId,
+        sourceHandle: "source",
+        targetHandle: "target",
         type: "graphEdge",
         data: { edge_type: "RESULTS_IN" },
       };
@@ -178,7 +188,27 @@ export function useGraphCreation() {
 
   /** Create a new branch from an existing GameContext node */
   const createBranch = useCallback(
-    (sourceGcId: string, sourceGcPosition: { x: number; y: number }) => {
+    (
+      sourceGcId: string,
+      sourceGcPosition: { x: number; y: number },
+      allNodes: Node[],
+    ) => {
+      const sourceGc = allNodes.find((n) => n.id === sourceGcId);
+      const sourceRole = (sourceGc?.data as Record<string, unknown>)
+        ?.relative_role as string | undefined;
+
+      if (sourceRole && sourceRole !== "NEUTRAL") {
+        const targetRole = "NEUTRAL";
+        const result = validator.validateTransition(
+          sourceRole as RelativeRole,
+          targetRole as RelativeRole,
+        );
+        if (!result.ok) {
+          console.warn(`[createBranch] Validation failed: ${result.error}`);
+          return null;
+        }
+      }
+
       const taId = genId("ta");
       const resultId = genId("result");
       const tpId = genId("tp");
@@ -219,6 +249,8 @@ export function useGraphCreation() {
         id: tpId,
         source: sourceGcId,
         target: taId,
+        sourceHandle: "source",
+        targetHandle: "target",
         type: "graphEdge",
         data: {
           edge_type: "TACTICAL_PATHWAY",
@@ -231,6 +263,8 @@ export function useGraphCreation() {
         id: riId,
         source: taId,
         target: resultId,
+        sourceHandle: "source",
+        targetHandle: "target",
         type: "graphEdge",
         data: { edge_type: "RESULTS_IN" },
       };
@@ -247,7 +281,20 @@ export function useGraphCreation() {
 
   /** Create a new result from an existing TechniqueAction node */
   const createResultFromTechnique = useCallback(
-    (sourceTaId: string, sourceTaPosition: { x: number; y: number }) => {
+    (
+      sourceTaId: string,
+      sourceTaPosition: { x: number; y: number },
+      allNodes: Node[],
+    ) => {
+      const sourceTa = allNodes.find((n) => n.id === sourceTaId);
+      const sourceRole = (sourceTa?.data as Record<string, unknown>)
+        ?.relative_role as string | undefined;
+
+      // For RESULTS_IN, we need to find the incoming TACTICAL_PATHWAY to get the source GC role
+      // Since we're creating from a TA, the source role is the role of the GC connected via TP
+      // This requires checking edges, but for simplicity we'll just allow creation (validation happens on connect)
+      // The full validation is done in the onConnectHandler and server-side
+
       const resultId = genId("result");
       const riId = genId("ri");
 
@@ -272,6 +319,8 @@ export function useGraphCreation() {
         id: riId,
         source: sourceTaId,
         target: resultId,
+        sourceHandle: "source",
+        targetHandle: "target",
         type: "graphEdge",
         data: { edge_type: "RESULTS_IN" },
       };

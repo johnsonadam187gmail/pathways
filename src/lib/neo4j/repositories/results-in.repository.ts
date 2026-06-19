@@ -45,6 +45,27 @@ export class ResultsInRepository {
     }
   }
 
+  async findBySourceAndTarget(
+    sourceId: string,
+    targetId: string,
+  ): Promise<ResultsIn | null> {
+    const session = this.getSession();
+    try {
+      const result = await session.run(RESULTS_IN.FIND_BY_SOURCE_AND_TARGET, {
+        source_id: sourceId,
+        target_id: targetId,
+      });
+      if (result.records.length === 0) return null;
+      return mapRecordToResultsIn(result.records[0]);
+    } catch (err) {
+      throw new DatabaseError(
+        `Failed to find RESULTS_IN edge: ${(err as Error).message}`,
+      );
+    } finally {
+      await session.close();
+    }
+  }
+
   async create(data: CreateResultsInInput): Promise<ResultsIn> {
     const validator = new TransitionalValidator();
     const id = uuidv4();

@@ -26,8 +26,8 @@ export interface GraphState {
   selectedEdgeId: string | null;
   viewport: Viewport;
 
-  setNodes: (nodes: Node[]) => void;
-  setEdges: (edges: Edge[]) => void;
+  setNodes: (nodes: Node[] | ((prev: Node[]) => Node[])) => void;
+  setEdges: (edges: Edge[] | ((prev: Edge[]) => Edge[])) => void;
   addNode: (node: Node) => void;
   updateNode: (id: string, data: Partial<Node["data"]>) => void;
   removeNodes: (ids: string[]) => void;

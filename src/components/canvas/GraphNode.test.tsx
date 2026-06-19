@@ -81,11 +81,12 @@ describe("GraphNode", () => {
     expect(queryByTestId("subtitle")).toBeNull();
   });
 
-  it("renders only source handle for game-context nodes", () => {
+  it("renders target and source handles for game-context nodes", () => {
     renderNode({ type: "game-context" });
     const handles = screen.getAllByTestId("rf-handle");
-    expect(handles).toHaveLength(1);
-    expect(handles[0]).toHaveAttribute("data-position", "bottom");
+    expect(handles).toHaveLength(2);
+    expect(handles[0]).toHaveAttribute("data-position", "top");
+    expect(handles[1]).toHaveAttribute("data-position", "bottom");
   });
 
   it("renders both handles for technique-action nodes", () => {

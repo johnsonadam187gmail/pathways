@@ -19,6 +19,12 @@ export const RESULTS_IN = {
            labels(target) AS target_labels
   `,
 
+  FIND_BY_SOURCE_AND_TARGET: `
+    MATCH (source:TechniqueAction {id: $source_id})-[r:RESULTS_IN]->(target {id: $target_id})
+    RETURN r, source.id AS source_id, target.id AS target_id,
+           labels(target) AS target_labels
+  `,
+
   CREATE_TO_GAME_CONTEXT: `
     MATCH (ta:TechniqueAction {id: $technique_id})
     MATCH (gc:GameContext {id: $target_id})

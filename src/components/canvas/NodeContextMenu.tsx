@@ -83,6 +83,7 @@ export default function NodeContextMenu({
     removeNodes,
     removeEdges,
     edges,
+    nodes,
   } = useGraphState();
   const { createBranch, createResultFromTechnique, createFullPathway } =
     useGraphCreation();
@@ -145,22 +146,26 @@ export default function NodeContextMenu({
         }
         case "new-branch": {
           if (menu.node) {
-            createBranch(menu.node.id, menu.node.position);
+            createBranch(menu.node.id, menu.node.position, nodes);
           }
           break;
         }
         case "new-decision": {
           if (menu.node) {
-            createBranch(menu.node.id, {
-              x: menu.node.position.x + 40,
-              y: menu.node.position.y + 100,
-            });
+            createBranch(
+              menu.node.id,
+              {
+                x: menu.node.position.x + 40,
+                y: menu.node.position.y + 100,
+              },
+              nodes,
+            );
           }
           break;
         }
         case "new-result": {
           if (menu.node) {
-            createResultFromTechnique(menu.node.id, menu.node.position);
+            createResultFromTechnique(menu.node.id, menu.node.position, nodes);
           }
           break;
         }
@@ -181,6 +186,7 @@ export default function NodeContextMenu({
       removeNodes,
       removeEdges,
       edges,
+      nodes,
       createBranch,
       createResultFromTechnique,
       createFullPathway,

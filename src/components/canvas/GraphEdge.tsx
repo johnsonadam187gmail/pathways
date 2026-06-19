@@ -49,10 +49,9 @@ function GraphEdge({
       />
       <EdgeLabelRenderer>
         <div
-          className="absolute rounded-lg px-2.5 py-1 text-[10px] font-medium shadow-lg transition-colors"
+          className="absolute rounded-lg px-2.5 py-1 text-[10px] font-medium shadow-lg transition-colors cursor-pointer hover:scale-105"
           style={{
             transform: `translate(-50%, -50%) translate(${labelX}px,${labelY}px)`,
-            pointerEvents: "none",
             maxWidth: 180,
             background: "var(--surface)",
             color: "var(--on-surface-variant)",

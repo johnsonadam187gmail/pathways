@@ -68,7 +68,7 @@ async function deleteEdgeFromApi(edge: Edge): Promise<boolean> {
 async function createPathway(
   sourceId: string,
   targetId: string,
-): Promise<boolean> {
+): Promise<{ ok: boolean; error?: string }> {
   try {
     const res = await fetch(`${API_BASE}/pathways`, {
       method: "POST",
@@ -82,16 +82,23 @@ async function createPathway(
         execution_counter: 0,
       }),
     });
-    return res.ok;
+    if (!res.ok) {
+      const errorData = await res.json().catch(() => ({}));
+      return {
+        ok: false,
+        error: errorData.error || "Failed to create pathway",
+      };
+    }
+    return { ok: true };
   } catch {
-    return false;
+    return { ok: false, error: "Network error creating pathway" };
   }
 }
 
 async function createResult(
   techniqueId: string,
   targetId: string,
-): Promise<boolean> {
+): Promise<{ ok: boolean; error?: string }> {
   try {
     const res = await fetch(`${API_BASE}/results`, {
       method: "POST",
@@ -101,9 +108,13 @@ async function createResult(
         target_id: targetId,
       }),
     });
-    return res.ok;
+    if (!res.ok) {
+      const errorData = await res.json().catch(() => ({}));
+      return { ok: false, error: errorData.error || "Failed to create result" };
+    }
+    return { ok: true };
   } catch {
-    return false;
+    return { ok: false, error: "Network error creating result" };
   }
 }
 
@@ -158,7 +169,8 @@ export function useGraphPersistence() {
     async (connection: { source: string; target: string }) => {
       const sourceNode = nodes.find((n) => n.id === connection.source);
       const targetNode = nodes.find((n) => n.id === connection.target);
-      if (!sourceNode || !targetNode) return false;
+      if (!sourceNode || !targetNode)
+        return { ok: false, error: "Node not found" };
 
       const sourceData = sourceNode.data as Record<string, unknown>;
       const targetData = targetNode.data as Record<string, unknown>;
@@ -171,7 +183,7 @@ export function useGraphPersistence() {
         return createResult(connection.source, connection.target);
       }
 
-      return false;
+      return { ok: false, error: "Invalid connection type" };
     },
     [nodes],
   );

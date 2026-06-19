@@ -1,6 +1,6 @@
 "use client";
 
-import { memo } from "react";
+import { memo, type CSSProperties } from "react";
 import { Handle, Position, type NodeProps } from "reactflow";
 
 export type GraphNodeData = {
@@ -74,13 +74,20 @@ function GraphNode({ data, selected }: NodeProps<GraphNodeData>) {
         minWidth: 140,
       }}
     >
-      {isTechnique || isTerminal ? (
+      {isTechnique || isTerminal || isContext ? (
         <Handle
           type="target"
           position={Position.Top}
           id="target"
-          className="!border-none !w-2 !h-2"
-          style={{ background: colors.border }}
+          className="w-3 h-3 border-2 transition-all duration-200"
+          style={
+            {
+              background: "transparent",
+              borderColor: colors.border,
+              borderRadius: "50%",
+              transform: "translateX(-50%)",
+            } as CSSProperties
+          }
         />
       ) : null}
 
@@ -117,8 +124,15 @@ function GraphNode({ data, selected }: NodeProps<GraphNodeData>) {
           type="source"
           position={Position.Bottom}
           id="source"
-          className="!border-none !w-2 !h-2"
-          style={{ background: colors.border }}
+          className="w-3 h-3 border-2 transition-all duration-200"
+          style={
+            {
+              background: "transparent",
+              borderColor: colors.border,
+              borderRadius: "50%",
+              transform: "translateX(-50%)",
+            } as CSSProperties
+          }
         />
       ) : null}
     </div>

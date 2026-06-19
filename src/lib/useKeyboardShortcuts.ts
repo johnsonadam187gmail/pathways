@@ -27,7 +27,7 @@ export function useKeyboardShortcuts(config: KeyboardShortcutConfig) {
 
   useEffect(() => {
     configRef.current = config;
-  });
+  }, [config]);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
