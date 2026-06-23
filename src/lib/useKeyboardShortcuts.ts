@@ -84,7 +84,7 @@ export function useKeyboardShortcuts(config: KeyboardShortcutConfig) {
           break;
         }
         case "Escape": {
-          if (cfg.contextMenuOpen || cfg.shortcutsOpen) {
+          if (cfg.contextMenuOpen || cfg.shortcutsOpen || cfg.selectedNodeId) {
             e.preventDefault();
             cfg.onEscape();
           }

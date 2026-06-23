@@ -112,9 +112,9 @@ function GraphCanvasInner() {
 
   const handleTabBranch = useCallback(
     (nodeId: string, position: { x: number; y: number }) => {
-      createBranch(nodeId, position);
+      createBranch(nodeId, position, nodes);
     },
-    [createBranch],
+    [createBranch, nodes],
   );
 
   const handleNewPathway = useCallback(
@@ -151,7 +151,7 @@ function GraphCanvasInner() {
         id: newId,
         position: { x: node.position.x + 50, y: node.position.y + 50 },
         selected: false,
-        data: { ...node.data },
+        data: structuredClone(node.data),
       });
       setSelectedNodeId(newId);
     },
